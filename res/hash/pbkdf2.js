@@ -42,6 +42,11 @@
  *    <div id="status"></div>
  *
  */
+
+goog.provide('cyphrd.crypto.PBKDF2');
+
+goog.require('cyphrd.crypto.sha1');
+
 var chrsz = 16;  /* bits per input character. 8 - ASCII; 16 - Unicode  */
 
 function str2binb (str) {
@@ -62,8 +67,7 @@ function binb2hex (binarray) {
   return str;
 }
 
-Crypto.PBKDF2 = function(password, salt, num_iterations, num_bytes)
-{
+cyphrd.crypto.PBKDF2 = function(password, salt, num_iterations, num_bytes) {
 	// Remember the password and salt
 	var m_bpassword = str2binb(password);
 	var m_salt = salt;
@@ -116,7 +120,9 @@ Crypto.PBKDF2 = function(password, salt, num_iterations, num_bytes)
 	var m_start_time, m_end_time;
 	
 	// Set up the HMAC-SHA1 computations
-	if (m_bpassword.length > 16) m_bpassword = binb_sha1(m_bpassword, password.length * chrsz);
+	if (m_bpassword.length > 16)
+		m_bpassword = binb_sha1(m_bpassword, password.length * chrsz);
+
 	for(var i = 0; i < 16; ++i)
 	{
 		m_ipad[i] = m_bpassword[i] ^ 0x36363636;
@@ -198,10 +204,11 @@ Crypto.PBKDF2 = function(password, salt, num_iterations, num_bytes)
 				m_key += tmp.substr(0, (m_key_length - (m_total_blocks - 1) * m_hash_length) * 2 );
 				
 				// Call the result callback function
-				if ($.isFunction(m_result_func))
+				if (goog.isFunction(m_result_func)) {
 					m_end_time = Date.now();
 					m_result_func(m_key, m_end_time - m_start_time);
+				}
 			}
 		}
 	}
-}
+};

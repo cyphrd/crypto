@@ -1,4 +1,6 @@
-Crypto.Tests = {
+goog.provide('cyphrd.crypto.tests');
+
+cyphrd.crypto.tests = {
 
 	// Will be a hash of
 	// { algorithm: { 'test': function() } }

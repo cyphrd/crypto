@@ -1,4 +1,6 @@
-(function(){
+goog.provide('cyphrd.crypto.md5');
+
+goog.require('cyphrd.crypto.endian.md5');
 
 /*
  * Calculate the MD5 of an array of little-endian words, and a bit length.

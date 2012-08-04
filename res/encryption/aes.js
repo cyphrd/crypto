@@ -1,61 +1,64 @@
-Crypto.register('AES', '1.0', {
-	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-	
-	/*
-	 * AES Cipher function: encrypt 'input' with Rijndael algorithm
-	 *
-	 *   takes   byte-array 'input' (16 bytes)
-	 *           2D byte-array key schedule 'w' (Nr+1 x Nb bytes)
-	 *
-	 *   applies Nr rounds (10/12/14) using key schedule w for 'add round key' stage
-	 *
-	 *   returns byte-array encrypted value (16 bytes)
-	 */
-	Cipher: function (input, w) {    // main Cipher function [ÃÂ§5.1]
-	  var Nb = 4;               // block size (in words): no of columns in state (fixed at 4 for AES)
-	  var Nr = w.length/Nb - 1; // no of rounds: 10/12/14 for 128/192/256-bit keys
-	
-	  var state = [[],[],[],[]];  // initialise 4xNb byte-array 'state' with input [§3.4]
-	  for (var i=0; i<4*Nb; i++) state[i%4][Math.floor(i/4)] = input[i];
-	
-	  state = this.AddRoundKey(state, w, 0, Nb);
-	
-	  for (var round=1; round<Nr; round++) {
+/*
+ * AES Cipher function: encrypt 'input' with Rijndael algorithm
+ *
+ *   takes   byte-array 'input' (16 bytes)
+ *           2D byte-array key schedule 'w' (Nr+1 x Nb bytes)
+ *
+ *   applies Nr rounds (10/12/14) using key schedule w for 'add round key' stage
+ *
+ *   returns byte-array encrypted value (16 bytes)
+ */
+
+goog.provide('cyphrd.crypto.aes');
+
+goog.require('cyphrd.crypto.base64');
+
+cyphrd.crypto.aes = {
+	Cipher: function(input, w) {  // main Cipher function [ÃÂ§5.1]
+		var Nb = 4;               // block size (in words): no of columns in state (fixed at 4 for AES)
+		var Nr = w.length/Nb - 1; // no of rounds: 10/12/14 for 128/192/256-bit keys
+
+		var state = [[],[],[],[]];  // initialise 4xNb byte-array 'state' with input [§3.4]
+		for (var i=0; i<4*Nb; i++)
+			state[i%4][Math.floor(i/4)] = input[i];
+
+		state = this.AddRoundKey(state, w, 0, Nb);
+
+		for (var round=1; round<Nr; round++) {
+			state = this.SubBytes(state, Nb);
+			state = this.ShiftRows(state, Nb);
+			state = this.MixColumns(state, Nb);
+			state = this.AddRoundKey(state, w, round, Nb);
+		}
+
 		state = this.SubBytes(state, Nb);
 		state = this.ShiftRows(state, Nb);
-		state = this.MixColumns(state, Nb);
-		state = this.AddRoundKey(state, w, round, Nb);
-	  }
-	
-	  state = this.SubBytes(state, Nb);
-	  state = this.ShiftRows(state, Nb);
-	  state = this.AddRoundKey(state, w, Nr, Nb);
-	
-	  var output = new Array(4*Nb);  // convert state to 1-d array before returning [§3.4]
-	  for (var i=0; i<4*Nb; i++) output[i] = state[i%4][Math.floor(i/4)];
-	  return output;
+		state = this.AddRoundKey(state, w, Nr, Nb);
+
+		var output = new Array(4*Nb);  // convert state to 1-d array before returning [§3.4]
+		for (var i=0; i<4*Nb; i++)
+			output[i] = state[i%4][Math.floor(i/4)];
+
+		return output;
 	},
-	
-	
-	SubBytes: function (s, Nb) {    // apply SBox to state S [§5.1.1]
+
+	SubBytes: function(s, Nb) {    // apply SBox to state S [§5.1.1]
 	  for (var r=0; r<4; r++) {
 		for (var c=0; c<Nb; c++) s[r][c] = this.Sbox[s[r][c]];
 	  }
 	  return s;
 	},
-	
-	
-	ShiftRows: function (s, Nb) {    // shift row r of state S left by r bytes [§5.1.2]
+
+	ShiftRows: function(s, Nb) {    // shift row r of state S left by r bytes [§5.1.2]
 	  var t = new Array(4);
 	  for (var r=1; r<4; r++) {
 		for (var c=0; c<4; c++) t[c] = s[r][(c+r)%Nb];  // shift into temp copy
 		for (var c=0; c<4; c++) s[r][c] = t[c];         // and copy back
 	  }          // note that this will work for Nb=4,5,6, but not 7,8 (always 4 for AES):
-	  return s;  // see fp.gladman.plus.com/cryptography_technology/rijndael/aes.spec.311.pdf 
+	  return s;  // see fp.gladman.plus.com/cryptography_technology/rijndael/aes.spec.311.pdf
 	},
-	
-	
-	MixColumns: function (s, Nb) {   // combine bytes of each col of state S [§5.1.3]
+
+	MixColumns: function(s, Nb) {   // combine bytes of each col of state S [§5.1.3]
 	  for (var c=0; c<4; c++) {
 		var a = new Array(4);  // 'a' is a copy of the current column from 's'
 		var b = new Array(4);  // 'b' is a*{02} in GF(2^8)
@@ -71,29 +74,27 @@ Crypto.register('AES', '1.0', {
 	  }
 	  return s;
 	},
-	
-	
-	AddRoundKey: function (state, w, rnd, Nb) {  // xor Round Key into state S [§5.1.4]
+
+	AddRoundKey: function(state, w, rnd, Nb) {  // xor Round Key into state S [§5.1.4]
 	  for (var r=0; r<4; r++) {
 		for (var c=0; c<Nb; c++) state[r][c] ^= w[rnd*4+c][r];
 	  }
 	  return state;
 	},
-	
-	
-	KeyExpansion: function (key) {  // generate Key Schedule (byte-array Nr+1 x Nb) from Key [§5.2]
+
+	KeyExpansion: function(key) {  // generate Key Schedule (byte-array Nr+1 x Nb) from Key [§5.2]
 	  var Nb = 4;            // block size (in words): no of columns in state (fixed at 4 for AES)
 	  var Nk = key.length/4;  // key length (in words): 4/6/8 for 128/192/256-bit keys
 	  var Nr = Nk + 6;       // no of rounds: 10/12/14 for 128/192/256-bit keys
-	
+
 	  var w = new Array(Nb*(Nr+1));
 	  var temp = new Array(4);
-	
+
 	  for (var i=0; i<Nk; i++) {
 		var r = [key[4*i], key[4*i+1], key[4*i+2], key[4*i+3]];
 		w[i] = r;
 	  }
-	
+
 	  for (var i=Nk; i<(Nb*(Nr+1)); i++) {
 		w[i] = new Array(4);
 		for (var t=0; t<4; t++) temp[t] = w[i-1][t];
@@ -105,24 +106,23 @@ Crypto.register('AES', '1.0', {
 		}
 		for (var t=0; t<4; t++) w[i][t] = w[i-Nk][t] ^ temp[t];
 	  }
-	
+
 	  return w;
 	},
-	
-	SubWord: function (w) {    // apply SBox to 4-byte word w
+
+	SubWord: function(w) {    // apply SBox to 4-byte word w
 	  for (var i=0; i<4; i++) w[i] = this.Sbox[w[i]];
 	  return w;
 	},
-	
-	RotWord: function (w) {    // rotate 4-byte word w left by one byte
+
+	RotWord: function(w) {    // rotate 4-byte word w left by one byte
 	  w[4] = w[0];
 	  for (var i=0; i<4; i++) w[i] = w[i+1];
 	  return w;
 	},
-	
-	
+
 	// Sbox is pre-computed multiplicative inverse in GF(2^8) used in SubBytes and KeyExpansion [§5.1.1]
-	Sbox:  [0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
+	Sbox: [0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
 				 0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
 				 0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,
 				 0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,
@@ -138,9 +138,9 @@ Crypto.register('AES', '1.0', {
 				 0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,
 				 0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,
 				 0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16],
-	
+
 	// Rcon is Round Constant used for the Key Expansion [1st col is 2^(r-1) in GF(2^8)] [§5.2]
-	Rcon: [ [0x00, 0x00, 0x00, 0x00],
+	Rcon: [[0x00, 0x00, 0x00, 0x00],
 				 [0x01, 0x00, 0x00, 0x00],
 				 [0x02, 0x00, 0x00, 0x00],
 				 [0x04, 0x00, 0x00, 0x00],
@@ -150,10 +150,9 @@ Crypto.register('AES', '1.0', {
 				 [0x40, 0x00, 0x00, 0x00],
 				 [0x80, 0x00, 0x00, 0x00],
 				 [0x1b, 0x00, 0x00, 0x00],
-				 [0x36, 0x00, 0x00, 0x00] ],
-	
-	
-	SetKey: function (password,nBits) {
+				 [0x36, 0x00, 0x00, 0x00]],
+
+	SetKey: function(password,nBits) {
 		if (password.constructor == Array && password.length == nBits/8) key = password;
 		else {
 		  var nBytes = nBits/8;  // no bytes in key
@@ -164,48 +163,48 @@ Crypto.register('AES', '1.0', {
 		}
 		return key;
 	},
-	
-	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-	
-	/* 
+
+	/**
 	 * Use AES to encrypt 'plaintext' with 'password' using 'nBits' key, in 'Counter' mode of operation
 	 *                           - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 	 *   for each block
 	 *   - outputblock = cipher(counter, key)
 	 *   - cipherblock = plaintext xor outputblock
+	 *
+	 * @return {string}
 	 */
-	AESEncryptCtr: function (plaintext, password, nBits) {
+	AESEncryptCtr: function(plaintext, password, nBits) {
 	  if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
-		
+
 	  var key = this.SetKey(password,nBits);
-	
+
 	  // initialise counter block (NIST SP800-38A §B.2): millisecond time-stamp for nonce in 1st 8 bytes,
 	  // block counter in 2nd 8 bytes
 	  var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
 	  var counterBlock = new Array(blockSize);  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
 	  var nonce = (new Date()).getTime();  // milliseconds since 1-Jan-1970
-	
+
 	  // encode nonce in two stages to cater for JavaScript 32-bit limit on bitwise ops
 	  for (var i=0; i<4; i++) counterBlock[i] = (nonce >>> i*8) & 0xff;
-	  for (var i=0; i<4; i++) counterBlock[i+4] = (nonce/0x100000000 >>> i*8) & 0xff; 
-	
+	  for (var i=0; i<4; i++) counterBlock[i+4] = (nonce/0x100000000 >>> i*8) & 0xff;
+
 	  // generate key schedule - an expansion of the key into distinct Key Rounds for each round
 	  var keySchedule = this.KeyExpansion(key);
-	
+
 	  var blockCount = Math.ceil(plaintext.length/blockSize);
 	  var ciphertext = new Array(blockCount);  // ciphertext as array of strings
-	  
+
 	  for (var b=0; b<blockCount; b++) {
 		// set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
 		// again done in two stages for 32-bit ops
 		for (var c=0; c<4; c++) counterBlock[15-c] = (b >>> c*8) & 0xff;
 		for (var c=0; c<4; c++) counterBlock[15-c-4] = (b/0x100000000 >>> c*8);
-	
+
 		var cipherCntr = this.Cipher(counterBlock, keySchedule);  // -- encrypt counter block --
-		
+
 		// calculate length of final block:
 		var blockLength = b<blockCount-1 ? blockSize : (plaintext.length-1)%blockSize+1;
-	
+
 		var ct = '';
 		for (var i=0; i<blockLength; i++) {  // -- xor plaintext with ciphered counter byte-by-byte --
 		  var plaintextByte = plaintext.charCodeAt(b*blockSize+i);
@@ -213,31 +212,27 @@ Crypto.register('AES', '1.0', {
 		  ct += String.fromCharCode(cipherByte);
 		}
 		// ct is now ciphertext for this block
-	
+
 		ciphertext[b] = this.escCtrlChars(ct);  // escape troublesome characters in ciphertext
 	  }
-	
+
 	  // convert the nonce to a string to go on the front of the ciphertext
 	  var ctrTxt = '';
 	  for (var i=0; i<8; i++) ctrTxt += String.fromCharCode(counterBlock[i]);
 	  ctrTxt = this.escCtrlChars(ctrTxt);
-	
+
 	  // use '-' to separate blocks, use Array.join to concatenate arrays of strings for efficiency
 	  return ctrTxt + '-' + ciphertext.join('-');
 	},
-	
-	
-	
-	
-	/* 
+
+	/**
 	 * Use AES to decrypt 'ciphertext' with 'password' using 'nBits' key, in Counter mode of operation
 	 *
 	 *   for each block
 	 *   - outputblock = cipher(counter, key)
 	 *   - cipherblock = plaintext xor outputblock
 	 */
-	 
-	 AESDecryptCtr: function (ciphertext, password, nBits) {
+	 AESDecryptCtr: function(ciphertext, password, nBits) {
 		if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
 
 		var key = this.SetKey(password,nBits);
@@ -277,42 +272,31 @@ Crypto.register('AES', '1.0', {
 		return plaintext.join('');
 	},
 
-	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-	escCtrlChars: function (str) {  // escape control chars which might cause problems handling ciphertext
+	escCtrlChars: function(str) {  // escape control chars which might cause problems handling ciphertext
 	  return str.replace(/[\0\t\n\v\f\r\xa0!-]/g, function(c) { return '!' + c.charCodeAt(0) + '!'; });
 	},  // \xa0 to cater for bug in Firefox; include '-' to leave it free for use as a block marker
 
-	unescCtrlChars: function (str) {  // unescape potentially problematic control characters
+	unescCtrlChars: function(str) {  // unescape potentially problematic control characters
 	  return str.replace(/!\d\d?\d?!/g, function(c) { return String.fromCharCode(c.slice(1,-1)); });
 	},
 
-	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-	encode: function(plaintext, key, pars){
+	encode: function(plaintext, key, pars) {
 		var ret = this.AESEncryptCtr(
 			plaintext,
 			key, 
-			pars.nbits && /^(128|192|256)$/.test(""+pars.nbits) ? pars.nbits : 256
+			pars && pars.nbits && /^(128|192|256)$/.test(""+pars.nbits) ? pars.nbits : 256
 		);
 
-		return Crypto.Base64.encode(ret, 1);
+		return cyphrd.crypto.base64.encode(ret);
 	},
 
-	decode: function(enctext, key, pars){
-		var text = Crypto.Base64.decode(enctext, 1);
+	decode: function(enctext, key, pars) {
+		var text = cyphrd.crypto.base64.decode(enctext);
 
 		return this.AESDecryptCtr(
 			text,
 			key,
-			pars.nbits && /^(128|192|256)$/.test(""+pars.nbits) ? pars.nbits : 256
+			pars && pars.nbits && /^(128|192|256)$/.test(""+pars.nbits) ? pars.nbits : 256
 		);
-	},
-
-	tests: {
-		Sanity: function(){
-			
-		}
 	}
-
-});
+};

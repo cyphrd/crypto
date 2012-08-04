@@ -1,75 +1,169 @@
-Crypto.register('RSA', '1.0', {
+goog.provide('cyphrd.crypto.rsa');
 
-	byte2Hex: function (b) {
-		if(b < 0x10)
-			return "0" + b.toString(16);
-		else
-			return b.toString(16);
-	},
+goog.require('cyphrd.crypto.random.secure');
+goog.require('cyphrd.crypto.jsbn');
 
-	// PKCS#1 (type 2, random) pad input string s to n bytes, and return a bigint
-	pkcs1pad2: function (s,n) {
-		if(n < s.length + 11) {
-			alert("Message too long for RSA");
-			return null;
+// cyphrd.crypto.rsa = function(){}
+cyphrd.crypto.rsa = function(){
+	this.n = null;
+	this.e = 0;
+	this.d = null;
+	this.p = null;
+	this.q = null;
+	this.dmp1 = null;
+	this.dmq1 = null;
+	this.coeff = null;
+};
+
+// Generate a new random private key B bits long, using public expt E
+cyphrd.crypto.rsa.prototype.generate = function(B,E) {
+	var rng = new SecureRandom();
+	var qs = B>>1;
+	this.e = parseInt(E,16);
+	var ee = new BigInteger(E,16);
+	for(;;) {
+		for(;;) {
+			this.p = new BigInteger(B-qs,1,rng);
+			if(this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) == 0 && this.p.isProbablePrime(10)) break;
 		}
-		var ba = [],
-		i = s.length - 1;
-		while(i >= 0 && n > 0) ba[--n] = s.charCodeAt(i--);
-		ba[--n] = 0;
-		var rng = new SecureRandom(),
-		x = [];
-		while(n > 2) { // random non-zero pad
-			x[0] = 0;
-			while(x[0] == 0) rng.nextBytes(x);
-			ba[--n] = x[0];
+		for(;;) {
+			this.q = new BigInteger(qs,1,rng);
+			if(this.q.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) == 0 && this.q.isProbablePrime(10)) break;
 		}
-		ba[--n] = 2;
-		ba[--n] = 0;
-		return new BigInteger(ba);
-	},
-
-	// Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
-	pkcs1unpad2: function (d,n) {
-		var b = d.toByteArray();
-		var i = 0;
-		while(i < b.length && b[i] == 0) ++i;
-		if(b.length-i != n-1 || b[i] != 2)
-			return null;
-		++i;
-		while(b[i] != 0)
-			if(++i >= b.length) return null;
-		var ret = "";
-		while(++i < b.length)
-			ret += String.fromCharCode(b[i]);
-		return ret;
-	},
-
-	//Key: Crypto.RSAKey,
-	//RSAKey: Crypto.RSAKey,
-
-	// Return the PKCS#1 RSA decryption of "ctext".
-	// "ctext" is an even-length hex string and the output is a plain string.
-	decode: function (enctext, rsa, pars) {
-		var plaintext = '', hash = JSON.decode(enctext);
-
-		hash.each(function(enctext){
-			plaintext += rsa.decrypt(enctext);
-		}.bind(plaintext));
-
-		return plaintext;
-	},
-
-	// Return the PKCS#1 RSA encryption of "text" as an even-length hex string
-	encode: function(plaintext, rsa, pars){
-		var hash = [], max = ((rsa.n.bitLength()+7)>>3) - 11;
-
-		while(plaintext.length){
-			hash.push( rsa.encrypt( plaintext.substring(0, max) ) );
-			plaintext = plaintext.substring(max);
+		if(this.p.compareTo(this.q) <= 0) {
+			var t = this.p;
+			this.p = this.q;
+			this.q = t;
 		}
+		var p1 = this.p.subtract(BigInteger.ONE);
+		var q1 = this.q.subtract(BigInteger.ONE);
+		var phi = p1.multiply(q1);
+		if(phi.gcd(ee).compareTo(BigInteger.ONE) == 0) {
+			this.n = this.p.multiply(this.q);
+			this.d = ee.modInverse(phi);
+			this.dmp1 = this.d.mod(p1);
+			this.dmq1 = this.d.mod(q1);
+			this.coeff = this.q.modInverse(this.p);
+			break;
+		}
+	}
+};
 
-		return JSON.encode(hash);
+// PKCS#1 (type 2, random) pad input string s to n bytes, and return a bigint
+cyphrd.crypto.rsa.pkcs1pad2 = function(s,n) {
+	if(n < s.length + 11) {
+		throw Error('Message too long for RSA');
 	}
 
-});
+	var ba = [],
+	i = s.length - 1;
+	while(i >= 0 && n > 0) ba[--n] = s.charCodeAt(i--);
+	ba[--n] = 0;
+	var rng = new SecureRandom(),
+	x = [];
+	while(n > 2) { // random non-zero pad
+		x[0] = 0;
+		while(x[0] == 0) rng.nextBytes(x);
+		ba[--n] = x[0];
+	}
+	ba[--n] = 2;
+	ba[--n] = 0;
+	return new BigInteger(ba);
+};
+
+// Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
+cyphrd.crypto.rsa.pkcs1unpad2 = function(d,n) {
+	var b = d.toByteArray();
+	var i = 0;
+	while(i < b.length && b[i] == 0) ++i;
+	if(b.length-i != n-1 || b[i] != 2)
+		return null;
+	++i;
+	while(b[i] != 0)
+		if(++i >= b.length) return null;
+	var ret = '';
+	while(++i < b.length)
+		ret += String.fromCharCode(b[i]);
+	return ret;
+};
+
+// Set the public key fields N and e from hex strings
+cyphrd.crypto.rsa.prototype.setPublic = function(N,E){
+	if(N != null && E != null && N.length > 0 && E.length > 0) {
+		this.n = new BigInteger(N,16);
+		this.e = parseInt(E,16);
+	}
+	else
+		throw Error('Invalid RSA public key');
+};
+
+// Set the private key fields N, e, and d from hex strings
+cyphrd.crypto.rsa.prototype.setPrivate = function(N,E,D) {
+	if(N != null && E != null && N.length > 0 && E.length > 0) {
+		this.n = new BigInteger(N,16);
+		this.e = parseInt(E,16);
+		this.d = new BigInteger(D,16);
+	}
+	else
+		throw Error('Invalid RSA private key');
+};
+
+// Set the private key fields N, e, d and CRT params from hex strings
+cyphrd.crypto.rsa.prototype.setPrivateEx = function(N,E,D,P,Q,DP,DQ,C) {
+	this.n = N;
+	this.e = E;
+	this.d = D;
+	this.p = P;
+	this.q = Q;
+	this.dmp1 = DP;
+	this.dmq1 = DQ;
+	this.coeff = C;
+};
+
+// Perform raw public operation on "x": return x^e (mod n)
+cyphrd.crypto.rsa.prototype.doPublic = function(x) {
+	return x.modPowInt(this.e, this.n);
+};
+
+// Perform raw private operation on "x": return x^d (mod n)
+cyphrd.crypto.rsa.prototype.doPrivate = function(x) {
+	if(this.p == null || this.q == null) {
+		return x.modPow(this.d, this.n);
+	}
+
+	// TODO: re-calculate any missing CRT params
+	var xp = x.mod(this.p).modPow(this.dmp1, this.p);
+	var xq = x.mod(this.q).modPow(this.dmq1, this.q);
+
+	while(xp.compareTo(xq) < 0) {
+		xp = xp.add(this.p);
+	}
+
+	return xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
+};
+
+cyphrd.crypto.rsa.prototype.encrypt = function(text){
+	var max = (this.n.bitLength()+7)>>3,
+		m = cyphrd.crypto.rsa.pkcs1pad2(text, max);
+
+	if(m == null)
+		return null;
+
+	var c = this.doPublic(m);
+	if(c == null)
+		return null;
+
+	var h = c.toString(16);
+	if ((h.length & 1) == 0)
+		return h;
+	else
+		return '0' + h;
+};
+
+cyphrd.crypto.rsa.prototype.decrypt = function(ctext){
+	if (!this.e) return null;
+	var c = new BigInteger(ctext, 16);
+	var m = this.doPrivate(c);
+	if(m == null) return null;
+	return cyphrd.crypto.rsa.pkcs1unpad2(m, (this.n.bitLength()+7)>>3);
+};

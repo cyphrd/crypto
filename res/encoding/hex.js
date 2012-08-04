@@ -1,43 +1,41 @@
-Crypto.register('HEX', '1.0', {
-	// 0 - lowercase, 1 - uppercase
-	_hexcase: 0,
+goog.provide('cyphrd.crypto.hex');
 
-	encode : function (string) {
-	    var hex_tab = this._hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
-	    var output = "";
-	    var x;
-	    for(var i = 0; i < string.length; i++)
-	    {
-	      x = string.charCodeAt(i);
-	      output += hex_tab.charAt((x >>> 4) & 0x0F)
-	             +  hex_tab.charAt( x        & 0x0F);
-	    }
-	    return output;
-	},
+// 0 - lowercase, 1 - uppercase
+cyphrd.crypto.hex._case = 0;
 
-	decode: function(hexstring, n){
-		if (!hexstring)
-			return '';
+cyphrd.crypto.hex.encode = function(string) {
+    var hex_tab = cyphrd.crypto.hex._case ? '0123456789ABCDEF' : '0123456789abcdef';
+    var output = '';
+    var x;
+    for(var i = 0; i < string.length; i++) {
+      x = string.charCodeAt(i);
+      output += hex_tab.charAt((x >>> 4) & 0x0F) + hex_tab.charAt(x&0x0F);
+    }
+    return output;
+};
 
-		var h = '';
-		var t = n ? n : hexstring.length;// : 32;
+cyphrd.crypto.hex.decode = function(hexstring, n) {
+	if (!hexstring)
+		return '';
 
-		for (var j=0;j<t;j=j+2)
-			h += String.fromCharCode(parseInt(hexstring.substring(j,j+2),16));
+	var h = '';
+	var t = n ? n : hexstring.length;// : 32;
 
-		return h;
-	},
+	for (var j=0;j<t;j=j+2)
+		h += String.fromCharCode(parseInt(hexstring.substring(j,j+2),16));
 
-	Tests: {
-		Sanity: function(){
-			// this will return a nice string with no HEX characters
-			var s = Crypto.SHA512.raw('abc');
-			var encoded = Crypto.encode('HEX', s);
-			var decoded = Crypto.decode('HEX', encoded);
+	return h;
+};
 
-			// after encoding and then decoding, we should have
-			// what we had before encoding.
-			return s == decoded;
-		}
-	}
-});
+// Tests: {
+// 	Sanity: function(){
+// 		// this will return a nice string with no HEX characters
+// 		var s = Crypto.SHA512.raw('abc');
+// 		var encoded = Crypto.encode('HEX', s);
+// 		var decoded = Crypto.decode('HEX', encoded);
+
+// 		// after encoding and then decoding, we should have
+// 		// what we had before encoding.
+// 		return s == decoded;
+// 	}
+// }

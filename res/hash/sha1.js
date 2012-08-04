@@ -1,3 +1,8 @@
+goog.provide('cyphrd.crypto.sha1');
+
+goog.require('cyphrd.crypto.utf8');
+goog.require('cyphrd.crypto.endian');
+
 /*
  * Calculate the SHA-1 of an array of big-endian words, and a bit length
  */
@@ -76,7 +81,8 @@ function bit_rol(num, cnt) {
 	return (num << cnt) | (num >>> (32 - cnt));
 }
 
-Crypto.register('SHA1', '1.0', {
+// cyphrd.crypto.sha1
+cyphrd.crypto.sha1 = {
 	raw: function(s){
 		s = Crypto.encode('UTF8', s);
 		return Crypto.decode('Endian', binb_sha1(Crypto.encode('Endian', s), s.length * 8));
@@ -99,7 +105,7 @@ Crypto.register('SHA1', '1.0', {
 		var hash = binb_sha1(ipad.concat(Crypto.encode('Endian', data)), 512 + data.length * 8);
 		return Crypto.decode('Endian', binb_sha1(opad.concat(hash), 512 + 160));
 	},
-	
+
 	hex: function(d){
 		return Crypto.encode('HEX', this.raw(d));
 	},
@@ -118,8 +124,8 @@ Crypto.register('SHA1', '1.0', {
 
 	Tests: {
 		Truism: function(){
-			return Crypto.SHA1.hex("abc").toLowerCase() ==
-				"a9993e364706816aba3e25717850c26c9cd0d89d";
+			return Crypto.SHA1.hex('abc').toLowerCase() ==
+				'a9993e364706816aba3e25717850c26c9cd0d89d';
 		}
 	}
-});
+};
