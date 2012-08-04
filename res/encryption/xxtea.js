@@ -1,3 +1,21 @@
+/**
+ * JavaScript Crypto library by Cyphrd
+ * Copyright (C) 2012 Cyphrd.com
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 // 'Block' Tiny Encryption Algorithm xxtea
 // (c) 2002-2006 Chris Veness <scripts@movable-type.co.uk>
@@ -17,7 +35,9 @@
 //
 //
 
-Crypto.register('xxTEA', '1.0', {
+goog.provide('cyphrd.crypto.xxtea');
+
+cyphrd.crypto.xxtea = {
 	encrypt: function (plaintext, key) {
 		if (plaintext.length == 0) return('');
 		var v = this.strToLongs(escape(plaintext).replace(/%20/g,' '));
@@ -88,20 +108,10 @@ Crypto.register('xxTEA', '1.0', {
 	},
 	
 	escCtrlCh: function (str) {  // escape control chars etc which might cause problems with encrypted texts
-   	return str.replace(/[\0\t\n\v\f\r\xa0'"!]/g, function(c) { return '!' + c.charCodeAt(0) + '!'; });
+		return str.replace(/[\0\t\n\v\f\r\xa0'"!]/g, function(c) { return '!' + c.charCodeAt(0) + '!'; });
 	},
 
 	unescCtrlCh: function (str) {  // unescape potentially problematic nulls and control characters
 		return str.replace(/!\d\d?\d?!/g, function(c) { return String.fromCharCode(c.slice(1,-1)); });
 	}	
-});
-
-String.implement({
-	tea_encode: function(key,pars) {
-		return Crypto.xxTEA.encode(this,key);
-	},
-
-	tea_decode: function(key,pars) {
-		return Crypto.xxTEA.decode(this,key);
-	}
-});
+};
