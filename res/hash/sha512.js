@@ -234,7 +234,10 @@ function binb_sha512(x, len) {
 	return hash;
 }
 
-//A constructor for 64-bit numbers
+/**
+ * A constructor for 64-bit numbers
+ * @constructor
+ */
 function int64(h, l) {
 	this.h = h;
 	this.l = l;

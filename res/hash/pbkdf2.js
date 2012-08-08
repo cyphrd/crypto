@@ -85,6 +85,9 @@ function binb2hex (binarray) {
   return str;
 }
 
+/**
+ * @constructor
+ */
 cyphrd.crypto.PBKDF2 = function(password, salt, num_iterations, num_bytes) {
 	// Remember the password and salt
 	var m_bpassword = str2binb(password);

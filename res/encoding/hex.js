@@ -14,6 +14,10 @@ cyphrd.crypto.hex.encode = function(string) {
     return output;
 };
 
+/**
+ * @param {string} hexstring
+ * @param {number=} n
+ */
 cyphrd.crypto.hex.decode = function(hexstring, n) {
 	if (!hexstring)
 		return '';

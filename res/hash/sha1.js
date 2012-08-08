@@ -84,15 +84,15 @@ function bit_rol(num, cnt) {
 // cyphrd.crypto.sha1
 cyphrd.crypto.sha1 = {
 	raw: function(s){
-		s = Crypto.encode('UTF8', s);
-		return Crypto.decode('Endian', binb_sha1(Crypto.encode('Endian', s), s.length * 8));
+		s = cyphrd.crypto.utf8.encode(s);
+		return cyphrd.crypto.endian.decode(binb_sha1(cyphrd.crypto.endian.encode(s), s.length * 8));
 	},
 
 	raw_hmac: function(key, data){
-		key = Crypto.encode('UTF8', key);
-		data = Crypto.encode('UTF8', data);
+		key = cyphrd.crypto.utf8.encode(key);
+		data = cyphrd.crypto.utf8.encode(data);
 
-		var bkey = Crypto.encode('Endian', key);
+		var bkey = cyphrd.crypto.endian.encode(key);
 		if(bkey.length > 16)
 			bkey = binb_sha1(bkey, key.length * 8);
 
@@ -102,30 +102,29 @@ cyphrd.crypto.sha1 = {
 			opad[i] = bkey[i] ^ 0x5C5C5C5C;
 		}
 
-		var hash = binb_sha1(ipad.concat(Crypto.encode('Endian', data)), 512 + data.length * 8);
-		return Crypto.decode('Endian', binb_sha1(opad.concat(hash), 512 + 160));
+		var hash = binb_sha1(ipad.concat(cyphrd.crypto.endian.encode(data)), 512 + data.length * 8);
+		return cyphrd.crypto.endian.decode(binb_sha1(opad.concat(hash), 512 + 160));
 	},
 
 	hex: function(d){
-		return Crypto.encode('HEX', this.raw(d));
+		return cyphrd.crypto.hex.encode(cyphrd.crypto.sha1.raw(d));
 	},
 
 	hex_hmac: function(k, d){
-		return Crypto.encode('HEX', this.raw_hmac(k, d));
+		return cyphrd.crypto.hex.encode(cyphrd.crypto.sha1.raw_hmac(k, d));
 	},
 
 	b64: function(d){
-		return Crypto.encode('Base64', this.raw(d));
+		return cyphrd.crypto.base64.encode(cyphrd.crypto.sha1.raw(d));
 	},
 
 	b64_hmac: function(k, d){
-		return Crypto.encode('Base64', this.raw_hmac(k, d));
+		return cyphrd.crypto.base64.encode(cyphrd.crypto.sha1.raw_hmac(k, d));
 	},
 
 	Tests: {
 		Truism: function(){
-			return Crypto.SHA1.hex('abc').toLowerCase() ==
-				'a9993e364706816aba3e25717850c26c9cd0d89d';
+			return cyphrd.crypto.sha1.hex('abc').toLowerCase() == 'a9993e364706816aba3e25717850c26c9cd0d89d';
 		}
 	}
 };

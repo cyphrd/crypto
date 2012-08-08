@@ -20,6 +20,9 @@ goog.provide('cyphrd.crypto.random.secure');
 
 // prng4.js - uses Arcfour as a PRNG
 
+/**
+ * @constructor
+ */
 function Arcfour() {
 	this.i = 0;
 	this.j = 0;
@@ -81,7 +84,7 @@ function rng_seed_time() {
 }
 
 // Initialize the pool with junk if needed.
-if(rng_pool == null) {
+(function(){
 	rng_pool = [];
 	rng_pptr = 0;
 	var t;
@@ -96,8 +99,11 @@ if(rng_pool == null) {
 	rng_seed_time();
 	//rng_seed_int(window.screenX);
 	//rng_seed_int(window.screenY);
-}
+})();
 
+/**
+ * @constructor
+ */
 function SecureRandom() {}
 
 SecureRandom.prototype.getByte = function() {

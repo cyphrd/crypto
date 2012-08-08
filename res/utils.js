@@ -54,10 +54,14 @@ cyphrd.crypto.utils = {
 		space: [161,254]
 	},
 
+	/**
+	 * @param {number} n Length
+	 * @param {Object=} chars Options for password generation
+	 */
 	generatePassword: function(n, chars) {
 		var str = '';
 
-		if (chars == undefined) {
+		if (chars === undefined) {
 			chars = {
 				lcase: 1,
 				ucase: 1,
@@ -76,12 +80,12 @@ cyphrd.crypto.utils = {
 				}
 			}
 		}
+
 		var pass = '';
 		if (str) {
-			var l = str.length,
-				p = 0;
-			for (p=0;p<n;) {
-				v = Math.floor(Math.random() * l);
+			var l = str.length, p = 0;
+			for (p=0; p<n;) {
+				var v = Math.floor(Math.random() * l);
 				if (v == l) continue;
 				var c = str.substring(v,v+1);
 				pass += c;
@@ -92,11 +96,11 @@ cyphrd.crypto.utils = {
 	},
 
 	gemerateSimplePassword: function(n) {
-		return cyphrd.crypto.utils.generatePassword({
+		return cyphrd.crypto.utils.generatePassword(n || 16, {
 			lcase: 1,
 			ucase: 1,
 			nums: 1
-		}, n || 16);
+		});
 	},
 
 	// generateSalt: function(){
@@ -116,15 +120,18 @@ cyphrd.crypto.utils = {
 	// 	return k;
 	// },
 
-	meld: function() {
+	/**
+	 * @param {...(Array)} var_args
+	 */
+	meld: function(var_args) {
 		var merged = "",
 			// merged = [],
 			index = 0,
-			cont, i;
+			cont, i, A;
 
 		do {
 			cont = false;
-			for (var i = 0; i < arguments.length; i++) {
+			for (i = 0; i < arguments.length; i++) {
 				A = arguments[i];
 				if (index < A.length) {
 					cont = true;
@@ -149,7 +156,7 @@ cyphrd.crypto.utils = {
 			digits = ['0', '1', '2', '3', '4','5','6','7','8','9','a','b','c','d','e','f'];
 
 		for (var idx = 0; idx < x.length; ++idx) {
-			/** @type {byte} */ var b = x[idx];
+			/** @type {string} */ var b = x[idx]; // should be a "byte"
 			key += digits[(b&0xf0) >> 4];
 			key += digits[b&0x0f];
 		}
@@ -169,8 +176,8 @@ cyphrd.crypto.utils = {
 	 * the real user will ever mistakenly enter one of these other-matching strings.
 	 *
 	 * @param {string} str String to hash.
-	 * @param {boolean} nohex If true will return decoded hex version.
-	 * @param {boolean} full If false it will only return a few of the characters of the hash.
+	 * @param {boolean=} nohex If true will return decoded hex version.
+	 * @param {boolean=} full If false it will only return a few of the characters of the hash.
 	 *
 	 * @return {string} A hashed version of string.
 	 */
@@ -192,6 +199,6 @@ cyphrd.crypto.utils = {
 	},
 
 	hash: function(str){
-		return cyphrd.crypto.utils.hashx(str + cyphrd.crypto.utils.hashx(str, 1, 1));
+		return cyphrd.crypto.utils.hashx(str + cyphrd.crypto.utils.hashx(str, true, true));
 	}
 };

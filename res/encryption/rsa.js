@@ -21,7 +21,9 @@ goog.provide('cyphrd.crypto.rsa');
 goog.require('cyphrd.crypto.random.secure');
 goog.require('cyphrd.crypto.jsbn');
 
-// cyphrd.crypto.rsa = function(){}
+/**
+ * @constructor
+ */
 cyphrd.crypto.rsa = function(){
 	this.n = null;
 	this.e = 0;
