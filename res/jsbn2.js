@@ -1,6 +1,8 @@
 goog.provide('cyphrd.crypto.jsbn');
 
-goog.require('goog.json');
+goog.require('cyphrd.jsbn.barrett');
+goog.require('cyphrd.jsbn.montgomery');
+goog.require('cyphrd.jsbn.nullexp');
 
 // Copyright (c) 2005  Tom Wu
 // All Rights Reserved.
@@ -19,22 +21,28 @@ var j_lm = ((canary&0xffffff)==0xefcafe);
  * @param {?number|string|Array} a
  * @param {number|string=} b
  * @param {number|SecureRandom=} c
+ *
  * @constructor
  */
 function BigInteger(a,b,c) {
   if(a != null)
-    if('number' == typeof a) this.fromNumber(a,b,c);
-    else if(b == null && 'string' != typeof a) this.fromString(a,256);
-    else this.fromString(a,b);
+    if("number" == typeof a) this.fromNumber(a,b,c);
+    else if(b == null && "string" != typeof a) this.fromString(a,256);
+    else this.fromString(a, /** @type {number} */ (b));
 }
 
-// return new, unset BigInteger
-function nbi() { return new BigInteger(null); }
+/**
+ * @return {BigInteger} A new, unset (null) BigInteger
+ */
+function nbi() {
+  return new BigInteger(null);
+}
 
 // am: Compute w_j += (x*this_i), propagate carries,
 // c is initial carry, returns final carry.
 // c < 3*dvalue, x < 2*dvalue, this_i < dvalue
 // We need to select the fastest one that works in this environment.
+
 if(j_lm && (navigator.appName == "Microsoft Internet Explorer")) {
   // am2 avoids a big mult-and-extract completely.
   // Max digit bits should be <= 30 because we do bitwise ops
@@ -50,7 +58,8 @@ if(j_lm && (navigator.appName == "Microsoft Internet Explorer")) {
       w[j++] = l&0x3fffffff;
     }
     return c;
-  };
+  }
+
   dbits = 30;
 }
 else if(j_lm && (navigator.appName != "Netscape")) {
@@ -65,12 +74,13 @@ else if(j_lm && (navigator.appName != "Netscape")) {
     }
     return c;
   };
+
   dbits = 26;
 }
 else {
-  // Mozilla/Netscape seems to prefer:
   // Alternately, set max digit bits to 28 since some
   // browsers slow down when dealing with 32-bit numbers.
+  // Mozilla/Netscape seems to prefer am3
   BigInteger.prototype.am = function(i,x,w,j,c,n) {
     var xl = x&0x3fff, xh = x>>14;
     while(--n >= 0) {
@@ -83,6 +93,7 @@ else {
     }
     return c;
   };
+
   dbits = 28;
 }
 
@@ -117,21 +128,34 @@ BigInteger.prototype.copyTo = function(r) {
   for(var i = this.t-1; i >= 0; --i) r[i] = this[i];
   r.t = this.t;
   r.s = this.s;
-}
+};
 
 // (protected) set from integer value x, -DV <= x < DV
 BigInteger.prototype.fromInt = function(x) {
   this.t = 1;
   this.s = (x<0)?-1:0;
   if(x > 0) this[0] = x;
-  else if(x < -1) this[0] = x+this.DV; // WARNING: This was originally just "DV" and not "this.DV" .. is this right?
+  else if(x < -1) this[0] = x+this.DV;
   else this.t = 0;
 };
 
-// return bigint initialized to value
-function nbv(i) { var r = nbi(); r.fromInt(i); return r; }
+/**
+ * @return {BigInteger} A new BigInt initialized to value
+ */
+function nbv(i) {
+  var r = nbi();
+  r.fromInt(i);
+  return r;
+}
 
-// (protected) set from string and radix
+/**
+ * set from string and radix
+ *
+ * @param {string|Array} s
+ * @param {number=} b
+ *
+ * protected
+ */
 BigInteger.prototype.fromString = function(s,b) {
   var k;
   if(b == 16) k = 4;
@@ -168,20 +192,19 @@ BigInteger.prototype.fromString = function(s,b) {
   }
   this.clamp();
   if(mi) BigInteger.ZERO.subTo(this,this);
+  return this;
 };
 
-/**
- * clamp off excess high words
- * @protected
- */
+// (protected) clamp off excess high words
 BigInteger.prototype.clamp = function() {
   var c = this.s&this.DM;
   while(this.t > 0 && this[this.t-1] == c) --this.t;
 };
 
 /**
- * @param {BigInteger=} b
- * @return {string} representation in given radix.
+ * @param {number=} b
+ * @return {string} Representation in given radix
+ *
  * @override
  */
 BigInteger.prototype.toString = function(b) {
@@ -215,8 +238,7 @@ BigInteger.prototype.toString = function(b) {
 
 // (public) -this
 BigInteger.prototype.negate = function() {
-  var r = nbi();
-  BigInteger.ZERO.subTo(this,r);
+  var r = nbi(); BigInteger.ZERO.subTo(this,r);
   return r;
 };
 
@@ -426,19 +448,35 @@ BigInteger.prototype.mod = function(a) {
 
 /**
  * Modular reduction using "classic" algorithm
+ *
  * @constructor
  */
-function Classic(m) { this.m = m; }
+function Classic(m) {
+  this.m = m;
+}
 
 Classic.prototype.convert = function(x) {
   if(x.s < 0 || x.compareTo(this.m) >= 0) return x.mod(this.m);
   else return x;
 };
 
-Classic.prototype.reduce = function(x) { return x; };
-Classic.prototype.revert = function(x) { x.divRemTo(this.m,null,x); };
-Classic.prototype.mulTo = function(x,y,r) { x.multiplyTo(y,r); this.reduce(r); };
-Classic.prototype.sqrTo = function(x,r) { x.squareTo(r); this.reduce(r); };
+Classic.prototype.revert = function(x) {
+  return x;
+};
+
+Classic.prototype.reduce = function(x) {
+  x.divRemTo(this.m,null,x);
+};
+
+Classic.prototype.mulTo = function(x,y,r) {
+  x.multiplyTo(y,r);
+  this.reduce(r);
+};
+
+Classic.prototype.sqrTo = function(x,r) {
+  x.squareTo(r);
+  this.reduce(r);
+};
 
 // (protected) return "-1/this % 2^DB"; useful for Mont. reduction
 // justification:
@@ -465,66 +503,6 @@ BigInteger.prototype.invDigit = function() {
   return (y>0)?this.DV-y:-y;
 }
 
-/**
- * Montgomery reduction
- * @constructor
- */
-function Montgomery(m) {
-  this.m = m;
-  this.mp = m.invDigit();
-  this.mpl = this.mp&0x7fff;
-  this.mph = this.mp>>15;
-  this.um = (1<<(m.DB-15))-1;
-  this.mt2 = 2*m.t;
-}
-
-// xR mod m
-Montgomery.prototype.convert = function(x) {
-  var r = nbi();
-  x.abs().dlShiftTo(this.m.t,r);
-  r.divRemTo(this.m,null,r);
-  if(x.s < 0 && r.compareTo(BigInteger.ZERO) > 0) this.m.subTo(r,r);
-  return r;
-};
-
-// x/R mod m
-Montgomery.prototype.revert = function(x) {
-  var r = nbi();
-  x.copyTo(r);
-  this.reduce(r);
-  return r;
-};
-
-// x = x/R mod m (HAC 14.32)
-Montgomery.prototype.reduce = function(x) {
-  while(x.t <= this.mt2)  // pad x so am has enough room later
-    x[x.t++] = 0;
-  for(var i = 0; i < this.m.t; ++i) {
-    // faster way of calculating u0 = x[i]*mp mod DV
-    var j = x[i]&0x7fff;
-    var u0 = (j*this.mpl+(((j*this.mph+(x[i]>>15)*this.mpl)&this.um)<<15))&x.DM;
-    // use am to combine the multiply-shift-add into one call
-    j = i+this.m.t;
-    x[j] += this.m.am(0,u0,x,i,0,this.m.t);
-    // propagate carry
-    while(x[j] >= x.DV) { x[j] -= x.DV; x[++j]++; }
-  }
-  x.clamp();
-  x.drShiftTo(this.m.t,x);
-  if(x.compareTo(this.m) >= 0) x.subTo(this.m,x);
-};
-
-// r = "x^2/R mod m"; x != r
-Montgomery.prototype.sqrTo = function(x,r) {
-  x.squareTo(r);
-  this.reduce(r);
-};
-
-// r = "xy/R mod m"; x,y != r
-Montgomery.prototype.mulTo = function(x,y,r) {
-  x.multiplyTo(y,r);
-  this.reduce(r);
-};
 
 // (protected) true iff this is even
 BigInteger.prototype.isEven = function() {
@@ -549,11 +527,13 @@ BigInteger.prototype.modPowInt = function(e,m) {
   var z;
   if(e < 256 || m.isEven()) z = new Classic(m); else z = new Montgomery(m);
   return this.exp(e,z);
-}
+};
 
 // "constants"
 BigInteger.ZERO = nbv(0);
 BigInteger.ONE = nbv(1);
+
+
 
 // Copyright (c) 2005-2009  Tom Wu
 // All Rights Reserved.
@@ -607,6 +587,9 @@ BigInteger.prototype.signum = function() {
 
 /**
  * convert to radix string
+ *
+ * @param {number=} b
+ *
  * @protected
  */
 BigInteger.prototype.toRadix = function(b) {
@@ -621,12 +604,9 @@ BigInteger.prototype.toRadix = function(b) {
     y.divRemTo(d,y,z);
   }
   return z.intValue().toString(b) + r;
-}
+};
 
-/**
- * convert from radix string
- * @protected
- */
+// (protected) convert from radix string
 BigInteger.prototype.fromRadix = function(s,b) {
   this.fromInt(0);
   if(b == null) b = 10;
@@ -654,10 +634,12 @@ BigInteger.prototype.fromRadix = function(s,b) {
 };
 
 /**
- * alternate constructor
- * @param {number} a
+ * Alternate constructor
+ *
+ * @param {string|number} a
  * @param {?number|string|SecureRandom=} b
  * @param {?number|string|SecureRandom=} c
+ *
  * @protected
  */
 BigInteger.prototype.fromNumber = function(a,b,c) {
@@ -710,17 +692,9 @@ BigInteger.prototype.toByteArray = function() {
   return r;
 };
 
-BigInteger.prototype.equals = function(a) {
-  return(this.compareTo(a)==0);
-};
-
-BigInteger.prototype.min = function(a) {
-  return(this.compareTo(a)<0)?this:a;
-};
-
-BigInteger.prototype.max = function(a) {
-  return(this.compareTo(a)>0)?this:a;
-};
+BigInteger.prototype.equals = function(a) { return(this.compareTo(a)==0); };
+BigInteger.prototype.min = function(a) { return(this.compareTo(a)<0)?this:a; };
+BigInteger.prototype.max = function(a) { return(this.compareTo(a)>0)?this:a; };
 
 // (protected) r = this op a (bitwise)
 BigInteger.prototype.bitwiseTo = function(a,op,r) {
@@ -742,7 +716,6 @@ BigInteger.prototype.bitwiseTo = function(a,op,r) {
 
 // (public) this & a
 function op_and(x,y) { return x&y; }
-
 BigInteger.prototype.and = function(a) {
   var r = nbi();
   this.bitwiseTo(a,op_and,r);
@@ -780,7 +753,7 @@ BigInteger.prototype.not = function() {
   r.t = this.t;
   r.s = ~this.s;
   return r;
-};
+}
 
 // (public) this << n
 BigInteger.prototype.shiftLeft = function(n) {
@@ -826,10 +799,9 @@ function cbit(x) {
 // (public) return number of set bits
 BigInteger.prototype.bitCount = function() {
   var r = 0, x = this.s&this.DM;
-  for(var i = 0; i < this.t; ++i)
-    r += cbit(this[i]^x);
+  for(var i = 0; i < this.t; ++i) r += cbit(this[i]^x);
   return r;
-}
+};
 
 // (public) true iff nth bit is set
 BigInteger.prototype.testBit = function(n) {
@@ -838,10 +810,7 @@ BigInteger.prototype.testBit = function(n) {
   return((this[j]&(1<<(n%this.DB)))!=0);
 };
 
-/**
- * this op (1<<n)
- * @protected
- */
+// (protected) this op (1<<n)
 BigInteger.prototype.changeBit = function(n,op) {
   var r = BigInteger.ONE.shiftLeft(n);
   this.bitwiseTo(r,op,r);
@@ -863,10 +832,7 @@ BigInteger.prototype.flipBit = function(n) {
   return this.changeBit(n,op_xor);
 };
 
-/**
- * r = this + a
- * @protected
- */
+// (protected) r = this + a
 BigInteger.prototype.addTo = function(a,r) {
   var i = 0, c = 0, m = Math.min(a.t,this.t);
   while(i < m) {
@@ -916,12 +882,11 @@ BigInteger.prototype.subtract = function(a) {
 // (public) this * a
 BigInteger.prototype.multiply = function(a) {
   var r = nbi();
-  this.multiplyTo(a,r);
+  this.multiplyTo(a, r);
   return r;
 };
 
 // (public) this^2
-// JSBN-specific extension
 BigInteger.prototype.square = function() {
   var r = nbi();
   this.squareTo(r);
@@ -938,7 +903,7 @@ BigInteger.prototype.divide = function(a) {
 // (public) this % a
 BigInteger.prototype.remainder = function(a) {
   var r = nbi();
-  this.divRemTo(a,null,r);
+  this.divRemTo(a, null, r);
   return r;
 };
 
@@ -968,19 +933,9 @@ BigInteger.prototype.dAddOffset = function(n,w) {
   }
 };
 
-/**
- * A "null" reducer
- * @constructor
- */
-function NullExp() {}
-NullExp.prototype.convert = function(x) { return x; };
-NullExp.prototype.revert = function(x) { return x; };
-NullExp.prototype.mulTo = function(x,y,r) { x.multiplyTo(y,r); };
-NullExp.prototype.sqrTo = function(x,r) { x.squareTo(r); };
-
 // (public) this^e
 BigInteger.prototype.pow = function(e) {
-  return this.exp(e, new NullExp());
+  return this.exp(e,new NullExp());
 };
 
 // (protected) r = lower n words of "this * a", a.t <= n
@@ -1007,52 +962,6 @@ BigInteger.prototype.multiplyUpperTo = function(a,n,r) {
     r[this.t+i-n] = this.am(n-i,a[i],r,0,0,this.t+i-n);
   r.clamp();
   r.drShiftTo(1,r);
-};
-
-/**
- * Barrett modular reduction
- * @constructor
- */
-function Barrett(m) {
-  // setup Barrett
-  this.r2 = nbi();
-  this.q3 = nbi();
-  BigInteger.ONE.dlShiftTo(2*m.t,this.r2);
-  this.mu = this.r2.divide(m);
-  this.m = m;
-}
-
-Barrett.prototype.convert = function(x) {
-  if(x.s < 0 || x.t > 2*this.m.t) return x.mod(this.m);
-  else if(x.compareTo(this.m) < 0) return x;
-  else { var r = nbi(); x.copyTo(r); this.reduce(r); return r; }
-};
-
-Barrett.prototype.revert = function(x) {
-  return x;
-};
-
-// x = x mod m (HAC 14.42)
-Barrett.prototype.reduce = function(x) {
-  x.drShiftTo(this.m.t-1,this.r2);
-  if(x.t > this.m.t+1) { x.t = this.m.t+1; x.clamp(); }
-  this.mu.multiplyUpperTo(this.r2,this.m.t+1,this.q3);
-  this.m.multiplyLowerTo(this.q3,this.m.t+1,this.r2);
-  while(x.compareTo(this.r2) < 0) x.dAddOffset(1,this.m.t+1);
-  x.subTo(this.r2,x);
-  while(x.compareTo(this.m) >= 0) x.subTo(this.m,x);
-};
-
-// r = x^2 mod m; x != r
-Barrett.prototype.sqrTo = function barrettSqrTo(x,r) {
-  x.squareTo(r);
-  this.reduce(r);
-};
-
-// r = x*y mod m; x,y != r
-Barrett.prototype.mulTo = function(x,y,r) {
-  x.multiplyTo(y,r);
-  this.reduce(r);
 };
 
 // (public) this^e % m (HAC 14.85)
@@ -1192,7 +1101,7 @@ BigInteger.prototype.modInverse = function(m) {
   if(d.compareTo(m) >= 0) return d.subtract(m);
   if(d.signum() < 0) d.addTo(m,d); else return d;
   if(d.signum() < 0) return d.add(m); else return d;
-}
+};
 
 var lowprimes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,509,521,523,541,547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659,661,673,677,683,691,701,709,719,727,733,739,743,751,757,761,769,773,787,797,809,811,821,823,827,829,839,853,857,859,863,877,881,883,887,907,911,919,929,937,941,947,953,967,971,977,983,991,997];
 var lplim = (1<<26)/lowprimes[lowprimes.length-1];
@@ -1240,23 +1149,6 @@ BigInteger.prototype.millerRabin = function(t) {
   }
   return true;
 };
-
-BigInteger.prototype.safe = function() {
-  var $N = {};
-  this.copyTo($N);
-  return goog.json.serialize($N);
-};
-
-BigInteger.unsafe = function(big) {
-  big = goog.json.parse(big);
-  if(!big) return null;
-  var n = new BigInteger(null);
-  for(var i = big.t-1; i >= 0; --i) n[i] = big[i];
-  n.t = big.t;
-  n.s = big.s;
-  return n;
-};
-
 
 // BigInteger interfaces not implemented in jsbn:
 
