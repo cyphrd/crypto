@@ -60,7 +60,7 @@ cyphrd.crypto.passphrases.isSuperSimple = function(phrase, opt_check_dictionary)
  * @param {boolean=} opt_check_dictionary Check common dictionary (optional).
  * @param {boolean=} opt_return_why Return why this password is considered simple (optional).
  *
- * @return {boolean} Whether this passphrase is simple.
+ * @return {boolean|string} Whether this passphrase is simple.
  */
 cyphrd.crypto.passphrases.isSimple = function(phrase, opt_check_dictionary, opt_return_why) {
 	if (cyphrd.crypto.passphrases.isSuperSimple(phrase, false))
@@ -471,6 +471,8 @@ cyphrd.crypto.passphrases.dictionary.superSimple = [
 ];
 
 // passwords that contain special characters
+// even though these may appear "secure", they are common and are therefore
+// likely to be bruteforced with a dictionary hack.
 cyphrd.crypto.passphrases.dictionary.simple = [
 	'0.0.0.000',
 	'0.0.000',
