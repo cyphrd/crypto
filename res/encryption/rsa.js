@@ -22,9 +22,14 @@ goog.require('cyphrd.crypto.random.secure');
 goog.require('cyphrd.crypto.jsbn');
 
 /**
+ * RSA Key and Encryption
+ *
+ * Code originally by Tom Wu, available at:
+ * http://www-cs-students.stanford.edu/~tjw/jsbn/
+ *
  * @constructor
  */
-cyphrd.crypto.rsa = function(){
+cyphrd.crypto.rsa = function() {
 	this.n = null;
 	this.e = 0;
 	this.d = null;
@@ -35,19 +40,24 @@ cyphrd.crypto.rsa = function(){
 	this.coeff = null;
 };
 
-// Generate a new random private key B bits long, using public expt E
-cyphrd.crypto.rsa.prototype.generate = function(B,E) {
+/**
+ * Generate a new random private key B bits long, using public expt E
+ *
+ * @param {number} B bitlength (1024, 512, etc).
+ * @param {string} E Exponent (10001, 3, etc).
+ */
+cyphrd.crypto.rsa.prototype.generate = function(B, E) {
 	var rng = new SecureRandom();
 	var qs = B>>1;
 	this.e = parseInt(E,16);
 	var ee = new BigInteger(E,16);
 	for(;;) {
 		for(;;) {
-			this.p = new BigInteger(B-qs,1,rng);
+			this.p = new BigInteger(B-qs, 1, rng);
 			if(this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) == 0 && this.p.isProbablePrime(10)) break;
 		}
 		for(;;) {
-			this.q = new BigInteger(qs,1,rng);
+			this.q = new BigInteger(qs, 1, rng);
 			if(this.q.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) == 0 && this.q.isProbablePrime(10)) break;
 		}
 		if(this.p.compareTo(this.q) <= 0) {
@@ -70,7 +80,7 @@ cyphrd.crypto.rsa.prototype.generate = function(B,E) {
 };
 
 // PKCS#1 (type 2, random) pad input string s to n bytes, and return a bigint
-cyphrd.crypto.rsa.pkcs1pad2 = function(s,n) {
+cyphrd.crypto.rsa.pkcs1pad2 = function(s, n) {
 	if(n < s.length + 11) {
 		throw Error('Message too long for RSA');
 	}
@@ -92,7 +102,7 @@ cyphrd.crypto.rsa.pkcs1pad2 = function(s,n) {
 };
 
 // Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
-cyphrd.crypto.rsa.pkcs1unpad2 = function(d,n) {
+cyphrd.crypto.rsa.pkcs1unpad2 = function(d, n) {
 	var b = d.toByteArray();
 	var i = 0;
 	while(i < b.length && b[i] == 0) ++i;
@@ -108,7 +118,7 @@ cyphrd.crypto.rsa.pkcs1unpad2 = function(d,n) {
 };
 
 // Set the public key fields N and e from hex strings
-cyphrd.crypto.rsa.prototype.setPublic = function(N,E){
+cyphrd.crypto.rsa.prototype.setPublic = function(N, E){
 	if(N != null && E != null && N.length > 0 && E.length > 0) {
 		this.n = new BigInteger(N,16);
 		this.e = parseInt(E,16);
@@ -118,7 +128,7 @@ cyphrd.crypto.rsa.prototype.setPublic = function(N,E){
 };
 
 // Set the private key fields N, e, and d from hex strings
-cyphrd.crypto.rsa.prototype.setPrivate = function(N,E,D) {
+cyphrd.crypto.rsa.prototype.setPrivate = function(N, E, D) {
 	if(N != null && E != null && N.length > 0 && E.length > 0) {
 		this.n = new BigInteger(N,16);
 		this.e = parseInt(E,16);
@@ -129,7 +139,7 @@ cyphrd.crypto.rsa.prototype.setPrivate = function(N,E,D) {
 };
 
 // Set the private key fields N, e, d and CRT params from hex strings
-cyphrd.crypto.rsa.prototype.setPrivateEx = function(N,E,D,P,Q,DP,DQ,C) {
+cyphrd.crypto.rsa.prototype.setPrivateEx = function(N, E, D, P, Q, DP, DQ, C) {
 	this.n = N;
 	this.e = E;
 	this.d = D;
@@ -162,7 +172,7 @@ cyphrd.crypto.rsa.prototype.doPrivate = function(x) {
 	return xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
 };
 
-cyphrd.crypto.rsa.prototype.encrypt = function(text){
+cyphrd.crypto.rsa.prototype.encrypt = function(text) {
 	var max = (this.n.bitLength()+7)>>3,
 		m = cyphrd.crypto.rsa.pkcs1pad2(text, max);
 
@@ -180,7 +190,7 @@ cyphrd.crypto.rsa.prototype.encrypt = function(text){
 		return '0' + h;
 };
 
-cyphrd.crypto.rsa.prototype.decrypt = function(ctext){
+cyphrd.crypto.rsa.prototype.decrypt = function(ctext) {
 	if (!this.e) return null;
 	var c = new BigInteger(ctext, 16);
 	var m = this.doPrivate(c);
