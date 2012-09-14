@@ -18,6 +18,8 @@
 
 goog.provide('cyphrd.crypto.rsa');
 
+goog.require('goog.array');
+
 goog.require('cyphrd.crypto.random.secure');
 goog.require('cyphrd.crypto.jsbn');
 
@@ -117,14 +119,26 @@ cyphrd.crypto.rsa.pkcs1unpad2 = function(d, n) {
 	return ret;
 };
 
-// Set the public key fields N and e from hex strings
-cyphrd.crypto.rsa.prototype.setPublic = function(N, E){
-	if(N != null && E != null && N.length > 0 && E.length > 0) {
-		this.n = new BigInteger(N,16);
-		this.e = parseInt(E,16);
-	}
-	else
-		throw Error('Invalid RSA public key');
+/**
+ * Set the public key fields N and e from hex strings
+ *
+ * @param {BigInteger} N
+ * @param {number} E
+ */
+cyphrd.crypto.rsa.prototype.setPublic = function(N, E) {
+	this.n = N;
+	this.e = E;
+
+	// if(N != null && E != null && N.length > 0) {
+	// 	this.n = new BigInteger(N, 16);
+
+	// 	if (typeof E === 'number')
+	// 		this.e = E;
+	// 	else
+	// 		this.e = parseInt(E, 16);
+	// }
+	// else
+	// 	throw Error('Invalid RSA public key');
 };
 
 // Set the private key fields N, e, and d from hex strings
@@ -138,7 +152,18 @@ cyphrd.crypto.rsa.prototype.setPrivate = function(N, E, D) {
 		throw Error('Invalid RSA private key');
 };
 
-// Set the private key fields N, e, d and CRT params from hex strings
+/**
+ * Set the private key fields N, e, d and CRT params from given numbers.
+ *
+ * @param {BigInteger} N
+ * @param {number} E
+ * @param {BigInteger} D
+ * @param {BigInteger} P
+ * @param {BigInteger} Q
+ * @param {BigInteger} DP
+ * @param {BigInteger} DQ
+ * @param {BigInteger} C
+ */
 cyphrd.crypto.rsa.prototype.setPrivateEx = function(N, E, D, P, Q, DP, DQ, C) {
 	this.n = N;
 	this.e = E;
@@ -172,9 +197,12 @@ cyphrd.crypto.rsa.prototype.doPrivate = function(x) {
 	return xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
 };
 
+cyphrd.crypto.rsa.prototype.getMaxBlockLength = function() {
+	return (this.n.bitLength()+7)>>3;
+};
+
 cyphrd.crypto.rsa.prototype.encrypt = function(text) {
-	var max = (this.n.bitLength()+7)>>3,
-		m = cyphrd.crypto.rsa.pkcs1pad2(text, max);
+	var m = cyphrd.crypto.rsa.pkcs1pad2(text, this.getMaxBlockLength());
 
 	if(m == null)
 		return null;
@@ -190,10 +218,43 @@ cyphrd.crypto.rsa.prototype.encrypt = function(text) {
 		return '0' + h;
 };
 
+/**
+ * @param {string} text Text to encrypt
+ * @return {string} Ciphered text
+ */
+cyphrd.crypto.rsa.prototype.encryptBlocks = function(text) {
+	var max = this.getMaxBlockLength() - 11,
+		len = text.length,
+		blocks = [],
+		i;
+
+	for (i = 0; i < len; i += max) {
+		blocks.push(this.encrypt(text.substr(i, max)));
+	}
+
+	return blocks.join('::'); // each block will be 1/4 of the bitLength
+};
+
 cyphrd.crypto.rsa.prototype.decrypt = function(ctext) {
 	if (!this.e) return null;
 	var c = new BigInteger(ctext, 16);
 	var m = this.doPrivate(c);
 	if(m == null) return null;
 	return cyphrd.crypto.rsa.pkcs1unpad2(m, (this.n.bitLength()+7)>>3);
+};
+
+/**
+ * @param {string} ctext Ciphered text
+ * @return {string} Decrypted text
+ */
+cyphrd.crypto.rsa.prototype.decryptBlocks = function(ctext) {
+	ctext = ctext.split('::');
+	
+	var string = '';
+
+	goog.array.map(ctext, function(block) {
+		string += this.decrypt(block);
+	}, this);
+
+	return string;
 };
