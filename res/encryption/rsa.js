@@ -20,7 +20,7 @@ goog.provide('cyphrd.crypto.rsa');
 
 goog.require('goog.array');
 
-goog.require('cyphrd.crypto.random.secure');
+goog.require('cyphrd.crypto.SecureRandom');
 goog.require('cyphrd.crypto.jsbn');
 
 /**
@@ -49,7 +49,7 @@ cyphrd.crypto.rsa = function() {
  * @param {string} E Exponent (10001, 3, etc).
  */
 cyphrd.crypto.rsa.prototype.generate = function(B, E) {
-	var rng = new SecureRandom();
+	var rng = new cyphrd.crypto.SecureRandom();
 	var qs = B>>1;
 	this.e = parseInt(E,16);
 	var ee = new BigInteger(E,16);
@@ -91,7 +91,7 @@ cyphrd.crypto.rsa.pkcs1pad2 = function(s, n) {
 	i = s.length - 1;
 	while(i >= 0 && n > 0) ba[--n] = s.charCodeAt(i--);
 	ba[--n] = 0;
-	var rng = new SecureRandom(),
+	var rng = new cyphrd.crypto.SecureRandom(),
 	x = [];
 	while(n > 2) { // random non-zero pad
 		x[0] = 0;
@@ -248,11 +248,10 @@ cyphrd.crypto.rsa.prototype.decrypt = function(ctext) {
  * @return {string} Decrypted text
  */
 cyphrd.crypto.rsa.prototype.decryptBlocks = function(ctext) {
-	ctext = ctext.split('::');
-	
-	var string = '';
+	var blocks = ctext.split('::'),
+		string = '';
 
-	goog.array.map(ctext, function(block) {
+	goog.array.map(blocks, function(block) {
 		string += this.decrypt(block);
 	}, this);
 

@@ -16,111 +16,147 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-goog.provide('cyphrd.crypto.random.secure');
+goog.provide('cyphrd.crypto.rng');
+goog.provide('cyphrd.crypto.SecureRandom')
 
-// prng4.js - uses Arcfour as a PRNG
+goog.require('goog.events');
 
 /**
- * @constructor
+ * Pool size must be a multiple of 4 and greater than 32.
+ * An array of bytes the size of the pool
  */
-function Arcfour() {
-	this.i = 0;
-	this.j = 0;
-	this.S = [];
-}
+cyphrd.crypto.rng.psize = 256;
+// cyphrd.crypto.rng.state = null;
+cyphrd.crypto.rng.pool = [];
+cyphrd.crypto.rng.pptr = 0;
 
-// Initialize arcfour context from key, an array of ints, each from [0..255]
-Arcfour.prototype.init = function(key) {
-	var i, j, t;
-	for(i = 0; i < 256; ++i)
-	this.S[i] = i;
-	j = 0;
-	for(i = 0; i < 256; ++i) {
-	j = (j + this.S[i] + key[i % key.length]) & 255;
-	t = this.S[i];
-	this.S[i] = this.S[j];
-	this.S[j] = t;
-	}
-	this.i = 0;
-	this.j = 0;
-}
+/**
+ * Add a byte to the entropy vector
+ */
+cyphrd.crypto.rng.addByte = function(b) {
+	cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] = b;
+};
 
-Arcfour.prototype.next = function() {
-	var t;
-	this.i = (this.i + 1) & 255;
-	this.j = (this.j + this.S[this.i]) & 255;
-	t = this.S[this.i];
-	this.S[this.i] = this.S[this.j];
-	this.S[this.j] = t;
-	return this.S[(t + this.S[this.i]) & 255];
-}
+/**
+ * Mix in a 32-bit integer into the pool
+ */
+cyphrd.crypto.rng.add32 = function(x) {
+	// for (var i = 0; i < 4; i++) {
+	// 	this.addByte(w & 0xFF);
+	// 	w >>= 8;
+	// }
 
-// Pool size must be a multiple of 4 and greater than 32.
-// An array of bytes the size of the pool will be passed to init()
-var rng_psize = 256;
+	cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] ^= x & 255;
+	cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] ^= (x >> 8) & 255;
+	cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] ^= (x >> 16) & 255;
+	cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] ^= (x >> 24) & 255;
 
-// Random number generator - requires a PRNG backend, e.g. prng4.js
+	if (cyphrd.crypto.rng.pptr >= cyphrd.crypto.rng.psize)
+		cyphrd.crypto.rng.pptr -= cyphrd.crypto.rng.psize;
+};
 
-// For best results, put code like
-// <body onClick='rng_seed_time();' onKeyPress='rng_seed_time();'>
-// in your main HTML document.
-
-var rng_state;
-var rng_pool;
-var rng_pptr;
-
-// Mix in a 32-bit integer into the pool
-function rng_seed_int(x) {
-	rng_pool[rng_pptr++] ^= x & 255;
-	rng_pool[rng_pptr++] ^= (x >> 8) & 255;
-	rng_pool[rng_pptr++] ^= (x >> 16) & 255;
-	rng_pool[rng_pptr++] ^= (x >> 24) & 255;
-	if(rng_pptr >= rng_psize) rng_pptr -= rng_psize;
-}
-
-// Mix in the current time (w/milliseconds) into the pool
-function rng_seed_time() {
-	rng_seed_int(+(new Date));
-}
+/**
+ * Mix in the current time (w/milliseconds) into the pool
+ */
+cyphrd.crypto.rng.addTime = function() {
+	cyphrd.crypto.rng.add32(+(new Date));
+};
 
 // Initialize the pool with junk if needed.
-(function(){
-	rng_pool = [];
-	rng_pptr = 0;
-	var t;
+(function() {
+	cyphrd.crypto.rng.addTime();
 
-	while(rng_pptr < rng_psize) {
-		t = Math.floor(65536 * Math.random());
-		rng_pool[rng_pptr++] = t >>> 8;
-		rng_pool[rng_pptr++] = t & 255;
+	// see if the browser supports provided random numbers
+	if (window.crypto && window.crypto.getRandomValues) {
+		var ints = new Uint32Array(cyphrd.crypto.rng.psize / 4);
+		window.crypto.getRandomValues(ints);
+
+		for (var i = 0; i < ints.length; i++) {
+			cyphrd.crypto.rng.add32(ints[i]);
+		}
+	}
+	
+	// get a starting point for a pool from Math.random
+	else {
+		while(cyphrd.crypto.rng.pptr < cyphrd.crypto.rng.psize) {
+			var t = Math.floor(65536 * Math.random());
+			cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] = t >>> 8;
+			cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr++] = t & 255;
+		}
 	}
 
-	rng_pptr = 0;
-	rng_seed_time();
-	//rng_seed_int(window.screenX);
-	//rng_seed_int(window.screenY);
+	// listen for entropy from the client
+	goog.events.listen(window, 'click', function(event) {
+		cyphrd.crypto.rng.addTime();
+		cyphrd.crypto.rng.add32(event.screenX);
+		cyphrd.crypto.rng.add32(event.screenY);
+	});
+
+	var countMouseMoves = 0,
+		maxMouseMoved = 500;
+
+	var unlisten = goog.events.listen(window, 'mousemove', function(event) {
+		cyphrd.crypto.rng.addTime();
+		cyphrd.crypto.rng.add32(event.screenX);
+		cyphrd.crypto.rng.add32(event.screenY);
+
+		countMouseMoves++;
+
+		if (countMouseMoves > maxMouseMoved)
+			goog.events.unlistenByKey(unlisten);
+	});
 })();
 
 /**
  * @constructor
  */
-function SecureRandom() {}
+cyphrd.crypto.SecureRandom = function() {
+	this.i = 0;
+	this.j = 0;
+	this.S = [];
 
-SecureRandom.prototype.getByte = function() {
-	if(rng_state == null) {
-		rng_seed_time();
-		rng_state = new Arcfour();
-		rng_state.init(rng_pool);
-		for(rng_pptr = 0; rng_pptr < rng_pool.length; ++rng_pptr)
-			rng_pool[rng_pptr] = 0;
-		rng_pptr = 0;
-		//rng_pool = null;
+	cyphrd.crypto.rng.addTime();
+	this.init(cyphrd.crypto.rng.pool);
+
+	for(cyphrd.crypto.rng.pptr = 0; cyphrd.crypto.rng.pptr < cyphrd.crypto.rng.pool.length; ++cyphrd.crypto.rng.pptr)
+		cyphrd.crypto.rng.pool[cyphrd.crypto.rng.pptr] = 0;
+
+	cyphrd.crypto.rng.pptr = 0;
+};
+
+cyphrd.crypto.SecureRandom.prototype.init = function(key) {
+	var i, j, t;
+
+	for(i = 0; i < 256; ++i)
+		this.S[i] = i;
+
+	j = 0;
+
+	for(i = 0; i < 256; ++i) {
+		j = (j + this.S[i] + key[i % key.length]) & 255;
+		t = this.S[i];
+		this.S[i] = this.S[j];
+		this.S[j] = t;
 	}
-	// TODO: allow reseeding after first request
-	return rng_state.next();
-}
 
-SecureRandom.prototype.nextBytes = function(ba) {
-	var i;
-	for(i = 0; i < ba.length; ++i) ba[i] = this.getByte();
-}
+	this.i = 0;
+	this.j = 0;
+};
+
+cyphrd.crypto.SecureRandom.prototype.getByte = function() {
+	var t;
+	this.i = (this.i + 1) & 255;
+	this.j = (this.j + this.S[this.i]) & 255;
+
+	t = this.S[this.i];
+
+	this.S[this.i] = this.S[this.j];
+	this.S[this.j] = t;
+
+	return this.S[(t + this.S[this.i]) & 255];
+};
+
+cyphrd.crypto.SecureRandom.prototype.nextBytes = function(ba) {
+	for (var i = 0; i < ba.length; ++i)
+		ba[i] = this.getByte();
+};

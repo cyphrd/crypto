@@ -1,7 +1,7 @@
 goog.provide('cyphrd.crypto.utils');
 
 goog.require('cyphrd.crypto.hex');
-goog.require('cyphrd.crypto.random.secure');
+goog.require('cyphrd.crypto.SecureRandom');
 goog.require('cyphrd.crypto.sha512');
 
 cyphrd.crypto.utils = {
@@ -121,7 +121,7 @@ cyphrd.crypto.utils = {
 	// },
 
 	/**
-	 * @param {...(Array)} var_args
+	 * @param {...(string|Array)} var_args
 	 */
 	meld: function(var_args) {
 		var merged = "",
@@ -145,15 +145,20 @@ cyphrd.crypto.utils = {
 		return merged;
 	},
 
+	/**
+	 * Will always return a 256-length string which is as unique
+	 * as JavaScript can manage, to be used as an encryption key.
+	 */
 	generateKey: function() {
 		var salt = cyphrd.crypto.utils.generatePassword(512),
-			x = new Array(256),
-			rng = new SecureRandom();
+			x = new Array(cyphrd.crypto.rng.psize),
+			rng = new cyphrd.crypto.SecureRandom();
 
 		rng.nextBytes(x);
 
 		var key = '',
-			digits = ['0', '1', '2', '3', '4','5','6','7','8','9','a','b','c','d','e','f'];
+			digits = '0123456789abcdefghijklmnopqrstuvwxyz'.split('');
+			// ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'];
 
 		for (var idx = 0; idx < x.length; ++idx) {
 			/** @type {string} */ var b = x[idx]; // should be a "byte"

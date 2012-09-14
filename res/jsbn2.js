@@ -1,8 +1,10 @@
 goog.provide('cyphrd.crypto.jsbn');
 
-goog.require('cyphrd.jsbn.barrett');
-goog.require('cyphrd.jsbn.montgomery');
-goog.require('cyphrd.jsbn.nullexp');
+goog.require('cyphrd.crypto.jsbn.barrett');
+goog.require('cyphrd.crypto.jsbn.classic');
+goog.require('cyphrd.crypto.jsbn.montgomery');
+goog.require('cyphrd.crypto.jsbn.nullexp');
+goog.require('cyphrd.crypto.SecureRandom');
 
 // Copyright (c) 2005  Tom Wu
 // All Rights Reserved.
@@ -20,7 +22,7 @@ var j_lm = ((canary&0xffffff)==0xefcafe);
 /**
  * @param {?number|string|Array} a
  * @param {number|string=} b
- * @param {number|SecureRandom=} c
+ * @param {number|cyphrd.crypto.SecureRandom=} c
  *
  * @constructor
  */
@@ -446,38 +448,6 @@ BigInteger.prototype.mod = function(a) {
   return r;
 };
 
-/**
- * Modular reduction using "classic" algorithm
- *
- * @constructor
- */
-function Classic(m) {
-  this.m = m;
-}
-
-Classic.prototype.convert = function(x) {
-  if(x.s < 0 || x.compareTo(this.m) >= 0) return x.mod(this.m);
-  else return x;
-};
-
-Classic.prototype.revert = function(x) {
-  return x;
-};
-
-Classic.prototype.reduce = function(x) {
-  x.divRemTo(this.m,null,x);
-};
-
-Classic.prototype.mulTo = function(x,y,r) {
-  x.multiplyTo(y,r);
-  this.reduce(r);
-};
-
-Classic.prototype.sqrTo = function(x,r) {
-  x.squareTo(r);
-  this.reduce(r);
-};
-
 // (protected) return "-1/this % 2^DB"; useful for Mont. reduction
 // justification:
 //         xy == 1 (mod m)
@@ -525,7 +495,7 @@ BigInteger.prototype.exp = function(e,z) {
 // (public) this^e % m, 0 <= e < 2^32
 BigInteger.prototype.modPowInt = function(e,m) {
   var z;
-  if(e < 256 || m.isEven()) z = new Classic(m); else z = new Montgomery(m);
+  if(e < 256 || m.isEven()) z = new cyphrd.crypto.jsbn.classic(m); else z = new cyphrd.crypto.jsbn.montgomery(m);
   return this.exp(e,z);
 };
 
@@ -637,8 +607,8 @@ BigInteger.prototype.fromRadix = function(s,b) {
  * Alternate constructor
  *
  * @param {string|number} a
- * @param {?number|string|SecureRandom=} b
- * @param {?number|string|SecureRandom=} c
+ * @param {?number|string|cyphrd.crypto.SecureRandom=} b
+ * @param {?number|string|cyphrd.crypto.SecureRandom=} c
  *
  * @protected
  */
@@ -935,7 +905,7 @@ BigInteger.prototype.dAddOffset = function(n,w) {
 
 // (public) this^e
 BigInteger.prototype.pow = function(e) {
-  return this.exp(e,new NullExp());
+  return this.exp(e, new cyphrd.crypto.jsbn.nullexp());
 };
 
 // (protected) r = lower n words of "this * a", a.t <= n
@@ -974,11 +944,11 @@ BigInteger.prototype.modPow = function(e,m) {
   else if(i < 768) k = 5;
   else k = 6;
   if(i < 8)
-    z = new Classic(m);
+    z = new cyphrd.crypto.jsbn.classic(m);
   else if(m.isEven())
-    z = new Barrett(m);
+    z = new cyphrd.crypto.jsbn.barrett(m);
   else
-    z = new Montgomery(m);
+    z = new cyphrd.crypto.jsbn.montgomery(m);
 
   // precomputation
   var g = new Array(), n = 3, k1 = k-1, km = (1<<k)-1;

@@ -1,24 +1,24 @@
-goog.provide('cyphrd.jsbn.nullexp');
+goog.provide('cyphrd.crypto.jsbn.nullexp');
 
 /**
  * A "null" reducer
  *
  * @constructor
  */
-function NullExp() {}
+cyphrd.crypto.jsbn.nullexp = function() {};
 
-NullExp.prototype.convert = function(x) {
+cyphrd.crypto.jsbn.nullexp.prototype.convert = function(x) {
 	return x;
 };
 
-NullExp.prototype.revert = function(x) {
+cyphrd.crypto.jsbn.nullexp.prototype.revert = function(x) {
 	return x;
 };
 
-NullExp.prototype.mulTo = function(x,y,r) {
+cyphrd.crypto.jsbn.nullexp.prototype.mulTo = function(x,y,r) {
 	x.multiplyTo(y,r);
 };
 
-NullExp.prototype.sqrTo = function(x,r) {
+cyphrd.crypto.jsbn.nullexp.prototype.sqrTo = function(x,r) {
 	x.squareTo(r);
 };
