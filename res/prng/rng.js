@@ -67,9 +67,9 @@ cyphrd.crypto.rng.addTime = function() {
 	cyphrd.crypto.rng.addTime();
 
 	// see if the browser supports provided random numbers
-	if (window.crypto && window.crypto.getRandomValues) {
+	if (window.crypto && window.crypto['getRandomValues']) {
 		var ints = new Uint32Array(cyphrd.crypto.rng.psize / 4);
-		window.crypto.getRandomValues(ints);
+		window.crypto['getRandomValues'](ints);
 
 		for (var i = 0; i < ints.length; i++) {
 			cyphrd.crypto.rng.add32(ints[i]);
