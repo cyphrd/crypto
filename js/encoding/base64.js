@@ -1,3 +1,20 @@
+/**
+ * JavaScript Crypto library by Cyphrd
+ * Copyright (C) 2012 Cyphrd.com
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 if (!window.cyphrd) window.cyphrd = {};
 if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 
@@ -5,14 +22,16 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 {
 	var keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-	crypto.base64 = {
-		encode: function (input) {
+	crypto.base64 =
+	{
+		encode: function (input)
+		{
 			var output = "";
 			var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
 			var i = 0;
 
-			while (i < input.length) {
-
+			while (i < input.length)
+			{
 				chr1 = input.charCodeAt(i++);
 				chr2 = input.charCodeAt(i++);
 				chr3 = input.charCodeAt(i++);
@@ -22,9 +41,12 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 				enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
 				enc4 = chr3 & 63;
 
-				if (isNaN(chr2)) {
+				if (isNaN(chr2))
+				{
 					enc3 = enc4 = 64;
-				} else if (isNaN(chr3)) {
+				}
+				else if (isNaN(chr3))
+				{
 					enc4 = 64;
 				}
 				var output = output +
@@ -35,7 +57,8 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 			return output;
 		},
 
-		decode: function (input) {
+		decode: function (input)
+		{
 			var output = "";
 			var chr1, chr2, chr3;
 			var enc1, enc2, enc3, enc4;
@@ -43,8 +66,8 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 
 			input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 
-			while (i < input.length) {
-
+			while (i < input.length)
+			{
 				enc1 = keyStr.indexOf(input.charAt(i++));
 				enc2 = keyStr.indexOf(input.charAt(i++));
 				enc3 = keyStr.indexOf(input.charAt(i++));
@@ -56,10 +79,12 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 
 				output = output + String.fromCharCode(chr1);
 
-				if (enc3 != 64) {
+				if (enc3 != 64)
+				{
 					output = output + String.fromCharCode(chr2);
 				}
-				if (enc4 != 64) {
+				if (enc4 != 64)
+				{
 					output = output + String.fromCharCode(chr3);
 				}
 
@@ -70,11 +95,13 @@ if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 	};
 
 	// allow this to act like a pollyfill
-	if (!window.btoa) {
+	if (!window.btoa)
+	{
 		window.btoa = crypto.base64.encode;
 	}
 
-	if (!window.atob) {
+	if (!window.atob)
+	{
 		window.atob = crypto.base64.decode;
 	}
 

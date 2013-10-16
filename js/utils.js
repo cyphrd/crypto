@@ -4,10 +4,12 @@ goog.require('cyphrd.crypto.hex');
 goog.require('cyphrd.crypto.SecureRandom');
 goog.require('cyphrd.crypto.sha512');
 
-cyphrd.crypto.utils = {
+cyphrd.crypto.utils =
+{
 	// inspired by Keepass (http://keepass.info/)
 	// Judges a passphrase for it's secureness
-	getBits: function(passphrase) {
+	getBits: function(passphrase)
+	{
 		if (!passphrase) return 0;
 		var cset = [], ci = [0,32,33,47,48,57,58,64,65,90,91,96,97,122,123,126,126,255,256,65535],
 			t, ok, factor, df, vdf = [], vcc = [], el=0, bpc, ext, exdf;
@@ -46,7 +48,8 @@ cyphrd.crypto.utils = {
 		return Math.ceil(el * Math.log(tot) / Math.log(2));
 	},
 
-	charMatrix: {
+	charMatrix:
+	{
 		lcase: [97,122],
 		ucase: [65,90],
 		nums: [48,57],
@@ -58,7 +61,8 @@ cyphrd.crypto.utils = {
 	 * @param {number} n Length
 	 * @param {Object=} chars Options for password generation
 	 */
-	generatePassword: function(n, chars) {
+	generatePassword: function(n, chars)
+	{
 		var str = '';
 
 		if (chars === undefined) {
@@ -95,7 +99,8 @@ cyphrd.crypto.utils = {
 		return pass;
 	},
 
-	gemerateSimplePassword: function(n) {
+	generateSimplePassword: function(n)
+	{
 		return cyphrd.crypto.utils.generatePassword(n || 16, {
 			lcase: 1,
 			ucase: 1,
@@ -123,7 +128,8 @@ cyphrd.crypto.utils = {
 	/**
 	 * @param {...(string|Array)} var_args
 	 */
-	meld: function(var_args) {
+	meld: function(var_args)
+	{
 		var merged = "",
 			// merged = [],
 			index = 0,
@@ -149,7 +155,8 @@ cyphrd.crypto.utils = {
 	 * Will always return a 256-length string which is as unique
 	 * as JavaScript can manage, to be used as an encryption key.
 	 */
-	generateKey: function() {
+	generateKey: function()
+	{
 		var salt = cyphrd.crypto.utils.generatePassword(512),
 			x = new Array(cyphrd.crypto.rng.psize),
 			rng = new cyphrd.crypto.SecureRandom();
@@ -186,24 +193,28 @@ cyphrd.crypto.utils = {
 	 *
 	 * @return {string} A hashed version of string.
 	 */
-	hashx: function(str, nohex, full) {
+	hashx: function(str, nohex, full)
+	{
 		var s = cyphrd.crypto.sha512.hex(str),
 			ss = '';
 
-		if (!full) {
-			for (var j=0; j<s.length; j+=4) {
+		if (!full)
+		{
+			for (var j=0; j<s.length; j+=4)
+			{
 				ss += s.substring(j, j+1);
 			}
 		}
-
-		else {
+		else
+		{
 			ss = s;
 		}
 
 		return nohex ? cyphrd.crypto.hex.decode(ss) : ss;
 	},
 
-	hash: function(str){
+	hash: function(str)
+	{
 		return cyphrd.crypto.utils.hashx(str + cyphrd.crypto.utils.hashx(str, true, true));
 	}
 };

@@ -1,45 +1,63 @@
-goog.provide('cyphrd.crypto.hex');
-
-// 0 - lowercase, 1 - uppercase
-cyphrd.crypto.hex._case = 0;
-
-cyphrd.crypto.hex.encode = function(string) {
-    var hex_tab = cyphrd.crypto.hex._case ? '0123456789ABCDEF' : '0123456789abcdef';
-    var output = '';
-    var x;
-    for(var i = 0; i < string.length; i++) {
-      x = string.charCodeAt(i);
-      output += hex_tab.charAt((x >>> 4) & 0x0F) + hex_tab.charAt(x&0x0F);
-    }
-    return output;
-};
-
 /**
- * @param {string} hexstring
- * @param {number=} n
+ * JavaScript Crypto library by Cyphrd
+ * Copyright (C) 2012 Cyphrd.com
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-cyphrd.crypto.hex.decode = function(hexstring, n) {
-	if (!hexstring)
-		return '';
+if (!window.cyphrd) window.cyphrd = {};
+if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 
-	var h = '';
-	var t = n ? n : hexstring.length;// : 32;
+(function (crypto)
+{
+	var hex_case = 0; // 0 - lowercase, 1 - uppercase
 
-	for (var j=0;j<t;j=j+2)
-		h += String.fromCharCode(parseInt(hexstring.substring(j,j+2),16));
+	crypto.hex =
+	{
+		encode: function (string)
+		{
+				var hex_tab = hex_case ? '0123456789ABCDEF' : '0123456789abcdef';
+				var output = '';
+				var x;
+				for(var i = 0; i < string.length; i++)
+				{
+					x = string.charCodeAt(i);
+					output += hex_tab.charAt((x >>> 4) & 0x0F) + hex_tab.charAt(x&0x0F);
+				}
+				return output;
+		},
 
-	return h;
-};
+		/**
+		 * @param {string} hexstring
+		 * @param {number=} n
+		 */
+		decode: function (hexstring, n)
+		{
+			if (!hexstring)
+			{
+				return '';
+			}
 
-// Tests: {
-// 	Sanity: function(){
-// 		// this will return a nice string with no HEX characters
-// 		var s = Crypto.SHA512.raw('abc');
-// 		var encoded = Crypto.encode('HEX', s);
-// 		var decoded = Crypto.decode('HEX', encoded);
+			var h = '';
+			var t = n ? n : hexstring.length;// : 32;
 
-// 		// after encoding and then decoding, we should have
-// 		// what we had before encoding.
-// 		return s == decoded;
-// 	}
-// }
+			for (var j=0;j<t;j=j+2)
+			{
+				h += String.fromCharCode(parseInt(hexstring.substring(j,j+2),16));
+			}
+
+			return h;
+		}
+	};
+
+})(cyphrd.crypto);
