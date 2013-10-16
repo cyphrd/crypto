@@ -1,0 +1,18 @@
+#############
+## Sublime Text 2
+#############
+
+*.sublime-project
+*.sublime-workspace
+
+#############
+## Node
+#############
+node_modules/
+
+#############
+## Project specific
+#############
+site/_site/
+site/skinnyjs.zip
+web.config

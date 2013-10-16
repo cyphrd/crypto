@@ -1,89 +1,81 @@
-goog.provide('cyphrd.crypto.base64');
+if (!window.cyphrd) window.cyphrd = {};
+if (!window.cyphrd.crypto) window.cyphrd.crypto = {};
 
-goog.require('goog.crypt.base64');
+(function (crypto, window)
+{
+	var keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-cyphrd.crypto.base64.encode = function(input) {
-	return goog.crypt.base64.encodeString(input);
-};
+	crypto.base64 = {
+		encode: function (input) {
+			var output = "";
+			var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+			var i = 0;
 
-cyphrd.crypto.base64.decode = function(input) {
-	return goog.crypt.base64.decodeString(input);
-};
+			while (i < input.length) {
 
-// _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+				chr1 = input.charCodeAt(i++);
+				chr2 = input.charCodeAt(i++);
+				chr3 = input.charCodeAt(i++);
 
-// encode : function (input) {
-// 	var output = "";
-// 	var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-// 	var i = 0, keyStr = this._keyStr;
+				enc1 = chr1 >> 2;
+				enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+				enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+				enc4 = chr3 & 63;
 
-// 	while (i < input.length) {
+				if (isNaN(chr2)) {
+					enc3 = enc4 = 64;
+				} else if (isNaN(chr3)) {
+					enc4 = 64;
+				}
+				var output = output +
+					keyStr.charAt(enc1) + keyStr.charAt(enc2) +
+					keyStr.charAt(enc3) + keyStr.charAt(enc4);
+			}
 
-// 		chr1 = input.charCodeAt(i++);
-// 		chr2 = input.charCodeAt(i++);
-// 		chr3 = input.charCodeAt(i++);
+			return output;
+		},
 
-// 		enc1 = chr1 >> 2;
-// 		enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-// 		enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-// 		enc4 = chr3 & 63;
+		decode: function (input) {
+			var output = "";
+			var chr1, chr2, chr3;
+			var enc1, enc2, enc3, enc4;
+			var i = 0;
 
-// 		if (isNaN(chr2)) {
-// 			enc3 = enc4 = 64;
-// 		} else if (isNaN(chr3)) {
-// 			enc4 = 64;
-// 		}
-// 		var output = output +
-// 			keyStr.charAt(enc1) + keyStr.charAt(enc2) +
-// 			keyStr.charAt(enc3) + keyStr.charAt(enc4);
-// 	}
+			input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 
-// 	return output;
-// },
+			while (i < input.length) {
 
-// decode : function (input) {
-// 	var output = "";
-// 	var chr1, chr2, chr3;
-// 	var enc1, enc2, enc3, enc4;
-// 	var i = 0, keyStr = this._keyStr;
+				enc1 = keyStr.indexOf(input.charAt(i++));
+				enc2 = keyStr.indexOf(input.charAt(i++));
+				enc3 = keyStr.indexOf(input.charAt(i++));
+				enc4 = keyStr.indexOf(input.charAt(i++));
 
-// 	input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+				chr1 = (enc1 << 2) | (enc2 >> 4);
+				chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				chr3 = ((enc3 & 3) << 6) | enc4;
 
-// 	while (i < input.length) {
+				output = output + String.fromCharCode(chr1);
 
-// 		enc1 = keyStr.indexOf(input.charAt(i++));
-// 		enc2 = keyStr.indexOf(input.charAt(i++));
-// 		enc3 = keyStr.indexOf(input.charAt(i++));
-// 		enc4 = keyStr.indexOf(input.charAt(i++));
+				if (enc3 != 64) {
+					output = output + String.fromCharCode(chr2);
+				}
+				if (enc4 != 64) {
+					output = output + String.fromCharCode(chr3);
+				}
 
-// 		chr1 = (enc1 << 2) | (enc2 >> 4);
-// 		chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-// 		chr3 = ((enc3 & 3) << 6) | enc4;
+			}
 
-// 		output = output + String.fromCharCode(chr1);
+			return output;
+		}
+	};
 
-// 		if (enc3 != 64) {
-// 			output = output + String.fromCharCode(chr2);
-// 		}
-// 		if (enc4 != 64) {
-// 			output = output + String.fromCharCode(chr3);
-// 		}
+	// allow this to act like a pollyfill
+	if (!window.btoa) {
+		window.btoa = crypto.base64.encode;
+	}
 
-// 	}
+	if (!window.atob) {
+		window.atob = crypto.base64.decode;
+	}
 
-// 	return output;
-// },
-
-// Tests: {
-// 	Sanity: function(){
-// 		var str = Crypto.encode('UTF8', Crypto.utils.hashx('abc123', 1, 1));
-// 		var encoded = Crypto.encode('Base64', str);
-// 		var decoded = Crypto.decode('Base64', encoded);
-// 		return str == decoded;
-// 	},
-
-// 	Truism: function(){
-// 		var str = Crypto.encode('UTF8', 'abc123');
-// 		return Crypto.encode('Base64', str) == "YWJjMTIz";
-// 	}
-// }
+})(cyphrd.crypto, window);
