@@ -27,4 +27,24 @@ describe("base64", function()
             assert.equal(cyphrd.crypto.base64.encode('abc123'), 'YWJjMTIz');
         });
     });
+
+    describe("browser truism tests", function()
+    {
+        it("browser should support base64 natively", function()
+        {
+            assert.notEqual(window.btoa, cyphrd.crypto.base64.encode);
+        });
+
+        it("should match", function()
+        {
+            assert.equal(window.btoa('hello world'), cyphrd.crypto.base64.encode('hello world'));
+            assert.equal(window.btoa('8247198571298571928'), cyphrd.crypto.base64.encode('8247198571298571928'));
+            assert.equal(window.btoa('{hello: true, this: false, that: "muahaha"}'), cyphrd.crypto.base64.encode('{hello: true, this: false, that: "muahaha"}'));
+        });
+
+        it("utf8 test", function()
+        {
+            assert.equal(window.btoa('©'), cyphrd.crypto.base64.encode('©'));
+        });
+    });
 });
