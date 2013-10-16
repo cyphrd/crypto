@@ -5,6 +5,7 @@ cyphrd.cryto: javascript encryption library [![Build Status](https://secure.trav
 
 cyphrd.crypto is a collection of javascript encryption libraries allowing for the building of secure client-side web applications.
 
+
 supported hash functions
 ------------------
 
@@ -16,6 +17,7 @@ supported hash functions
 * [sha2](https://en.wikipedia.org/wiki/SHA-2)
 * [whirlpool](https://en.wikipedia.org/wiki/Whirlpool_(cryptography))
 
+
 supported algorithms
 ------------------
 
@@ -23,3 +25,19 @@ supported algorithms
 * [rc4](https://en.wikipedia.org/wiki/RC4)
 * [rsa](https://en.wikipedia.org/wiki/RSA_(algorithm))
 * [xxtea](https://en.wikipedia.org/wiki/XXTEA)
+
+
+supported encodings
+------------------
+
+ * base64
+ * endian
+ * hex
+ * utf8
+
+
+included utilities
+------------------
+
+ * passwords: a utility to identify password guessability
+ * [srp](https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol): secure remote password protocol
