@@ -21,7 +21,7 @@ supported hash functions
 supported algorithms
 ------------------
 
-* [aes](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
+* [aes](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) (rijndael)
 * [rc4](https://en.wikipedia.org/wiki/RC4)
 * [rsa](https://en.wikipedia.org/wiki/RSA_(algorithm))
 * [xxtea](https://en.wikipedia.org/wiki/XXTEA)

@@ -1,0 +1,38 @@
+{
+  "name": "crypto",
+  "version": "0.0.1",
+  "description": "cyphrd.crypto is a collection of encryption libraries in javascript.",
+  "scripts": {
+    "test": "mocha --check-leaks --reporter Spec",
+    "build": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cyphrd/crypto.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cyphrd/crypto/issues"
+  },
+  "keywords": [
+    "javascript",
+    "encryption",
+    "crypto",
+    "aes",
+    "rsa",
+    "hash",
+    "base64",
+    "b64",
+    "node"
+  ],
+  "author": {
+    "name": "Cyphrd",
+    "url": "http://www.cyphrd.com"
+  },
+  "contributors": [
+    {
+      "name": "Benjamin Hutchins",
+      "email": "ben@hutchins.co"
+    }
+  ],
+  "license": "GNU AFFERO GENERAL PUBLIC LICENSE"
+}
