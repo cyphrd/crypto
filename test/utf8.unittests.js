@@ -3,17 +3,20 @@ var crypto = require('..');
 
 describe("utf8", function()
 {
-	describe("sanity", function()
+	describe("sanity: test generated data", function()
 	{
 		it("binary data", function()
 		{
 			var s = crypto.utils.hashx('abc123', 1, 1);
-			var encoded = crypto.utf8.enc(s);
-			var decoded = crypto.utf8.dec(encoded);
+			var enc = crypto.utf8.enc(s);
+			var dec = crypto.utf8.dec(enc);
 
-			assert.equal(s, decoded);
+			assert.equal(s, dec);
 		});
+	});
 
+	describe("truism: test known data", function()
+	{
 		it("utf8 data", function()
 		{
 			var chinese = " 版面变化复";
