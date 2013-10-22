@@ -5,11 +5,14 @@ describe("hex", function()
 {
     describe("sanity", function()
     {
-        it("should result in expected base64 value after encoding", function()
+        it("result should match expected", function()
         {
-            var s = crypto.sha512.raw('abc123');
-            var encoded = crypto.hex.encode(s);
-            var decoded = crypto.hex.decode(encoded);
+            // returns a binary string
+            var s = crypto.sha512('abc123');
+
+            // encode string, then decode it to verify
+            var encoded = crypto.hex.enc(s);
+            var decoded = crypto.hex.dec(encoded);
             assert.equal(s, decoded);
         });
     });

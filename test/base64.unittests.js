@@ -9,43 +9,38 @@ describe("base64", function()
 		var expected = 'YWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIzYWJjMTIz';
 		var encoded;
 
-		it("should result in expected base64 value after encoding", function()
+		it("verify encoding", function()
 		{
-			encoded = crypto.b64.encodeString(str);
+			encoded = crypto.b64.enc(str);
 			assert.equal(encoded, expected);
 		});
 
-		it("should result in original value after decoding", function()
+		it("verify decoding", function()
 		{
-			assert.equal(crypto.b64.decodeString(encoded), str);
+			assert.equal(crypto.b64.dec(encoded), str);
 		});
 	});
 
-	describe("truism tests", function()
+	describe("Truism Verification", function()
 	{
-		it("should match values", function()
+		it("should match", function()
 		{
-			assert.equal(crypto.b64.encodeString('abc123'), 'YWJjMTIz');
+			assert.equal(crypto.b64.enc('abc123'), 'YWJjMTIz');
+			assert.equal('aGVsbG8gd29ybGQ=', crypto.b64.enc('hello world'));
+			assert.equal('ODI0NzE5ODU3MTI5ODU3MTkyOA==', crypto.b64.enc('8247198571298571928'));
+			assert.equal('e2hlbGxvOiB0cnVlLCB0aGlzOiBmYWxzZSwgdGhhdDogIm11YWhhaGEifQ==', crypto.b64.enc('{hello: true, this: false, that: "muahaha"}'));
 		});
 	});
 
-	// describe("browser truism tests", function()
-	// {
-	// 	it("browser should support base64 natively", function()
-	// 	{
-	// 		assert.notEqual(btoa, crypto.base64.encodeString);
-	// 	});
+	describe("UTF-8 Verification", function()
+	{
+		it("should match", function()
+		{
+			var chinese = " 版面变化复";
+			var enc = crypto.b64.enc(crypto.utf8.enc(chinese));
+			var dec = crypto.utf8.dec(crypto.b64.dec(enc));
 
-	// 	it("should match", function()
-	// 	{
-	// 		assert.equal(btoa('hello world'), crypto.base64.encodeString('hello world'));
-	// 		assert.equal(btoa('8247198571298571928'), crypto.base64.encodeString('8247198571298571928'));
-	// 		assert.equal(btoa('{hello: true, this: false, that: "muahaha"}'), crypto.base64.encodeString('{hello: true, this: false, that: "muahaha"}'));
-	// 	});
-
-	// 	it("utf8 test", function()
-	// 	{
-	// 		assert.equal(btoa('©'), crypto.base64.encodeString('©'));
-	// 	});
-	// });
+			assert.equal(chinese, dec);
+		});
+	});
 });
