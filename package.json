@@ -1,7 +1,7 @@
 {
   "name": "cyphrd",
   "version": "0.0.1",
-  "description": "cyphrd.crypto is a collection of encryption libraries in javascript.",
+  "description": "A collection of encryption and hashing modules.",
   "scripts": {
     "test": "mocha --check-leaks --reporter Spec",
     "build": ""
