@@ -1,5 +1,5 @@
 {
-  "name": "crypto",
+  "name": "cyphrd",
   "version": "0.0.1",
   "description": "cyphrd.crypto is a collection of encryption libraries in javascript.",
   "scripts": {
@@ -14,15 +14,19 @@
     "url": "https://github.com/cyphrd/crypto/issues"
   },
   "keywords": [
-    "javascript",
     "encryption",
+    "security",
     "crypto",
     "aes",
     "rsa",
     "hash",
+    "sha",
+    "sha1",
+    "sha256",
+    "sha512",
+    "pbkdf2",
     "base64",
-    "b64",
-    "node"
+    "b64"
   ],
   "author": {
     "name": "Cyphrd",
