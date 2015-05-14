@@ -60,10 +60,11 @@ The simple, straightest forward usage for a hash function is:
 
 The supported hash modules are:
 
-	crypto.md5
-	crypto.sha1
-	crypto.sha256
-	crypto.sha512
+	cyphrd.md5
+	cyphrd.rmd // RIPEMD-160
+	cyphrd.sha1
+	cyphrd.sha256
+	cyphrd.sha512
 
 Each is used in the same way. Each module has an array of uses. When you run hashing synchronously, you are given a `HashResult` object in return.
 
@@ -82,3 +83,21 @@ Each hash module that supports it, also can has a `hmac` method:
 
 	crypto.sha1.hmac('key', 'data'); // returns a computed HAMC `HashResult` object.
 
+
+#### Key-Expansion
+
+	var iterations = 10000;
+	var keyLength = 20;
+	cyphrd.pbkdf2(cyphrd.sha1, 'password', 'salt', iterations, keyLength, function (result) {
+		// result will be the hex string result
+	});
+
+NOTE: PBKDF2 will be rewritten to conform to other hash functions and result in a `HashResult` object.
+
+### Symmetric
+
+	var result = cyphrd.aes.enc('some data', 'your key');
+	cyphrd.aes.dec(result, 'your key');
+
+	var result = cyphrd.rc4.enc('some data', 'your key');
+	cyphrd.rc4.dec(result, 'your key');
