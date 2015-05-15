@@ -44,7 +44,6 @@ ways to use a hash function, from message authentication, data integrity and dat
 ### Utilities
 
  * passphrases: a utility to identify password guessability
- * [srp](https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol): secure remote password protocol
 
 ## How to use
 
