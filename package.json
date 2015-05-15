@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A collection of encryption and hashing modules.",
   "scripts": {
-    "test": "mocha --check-leaks --reporter Spec",
+    "test": "mocha --check-leaks",
     "build": ""
   },
   "repository": {
