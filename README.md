@@ -1,4 +1,4 @@
-# cyphrd.js: javascript encryption library
+# cyphrd.js: javascript encryption library [![Build Status](https://travis-ci.org/cyphrd/crypto.svg?branch=master)](https://travis-ci.org/cyphrd/crypto)
 
 A collection of encryption and hashing modules, works with Node.js, require.js or directly in a browser. Modules are usually taken from other open source projects (see file heads), then updated to improve specification support (lots of unit testing) and performance.
 
