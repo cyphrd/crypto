@@ -30,7 +30,7 @@ describe('pbkdf2', function () {
 		});
 	});
 
-	it('sha256', function (done) {
+	/*it('sha256', function (done) {
 		var testCompleted = 0;
 
 		crypto.pbkdf2(crypto.sha256, 'password', 'salt', 1, 10, function (hash) {
@@ -56,5 +56,5 @@ describe('pbkdf2', function () {
 				done();
 			}
 		});
-	});
+	});*/
 });
