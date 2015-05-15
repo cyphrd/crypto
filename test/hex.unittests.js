@@ -1,14 +1,14 @@
-var assert = require("assert")
+var assert = require('assert');
 var crypto = require('..');
 
-describe("hex", function()
+describe('hex', function()
 {
-    describe("sanity", function()
+    describe('sanity', function()
     {
-        it("result should match expected", function()
+        it('result should match expected', function()
         {
             // returns a binary string
-            var s = crypto.sha512('abc123');
+            var s = crypto.sha512('abc123').raw();
 
             // encode string, then decode it to verify
             var encoded = crypto.hex.enc(s);
